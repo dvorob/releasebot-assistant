@@ -1,5 +1,4 @@
 ## YMreleaseBot configuration
-
 ymreleasebot:
   name: 'xerxes-assistant'
   count_replicas: 1
