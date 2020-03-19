@@ -1,0 +1,33 @@
+{{ $conf := .Values.ymreleasebot }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $conf.logging.configmap_name }}
+data:
+  logging_assistant.conf: |
+    [loggers]
+    keys=root, assistant
+
+    [handlers]
+    keys=consoleHandler
+
+    [formatters]
+    keys=myFormatter
+
+    [logger_root]
+    level=CRITICAL
+    handlers=consoleHandler
+
+    [logger_assistant]
+    level=INFO
+    handlers=consoleHandler
+    qualname=assistant
+
+    [handler_consoleHandler]
+    class=StreamHandler
+    formatter=myFormatter
+    args=(sys.stdout,)
+
+    [formatter_myFormatter]
+    format={"message": "%(message)s", "level": "%(levelname)s", "app_name": "xerxes_assistant", "app_type": "python", "log_type":"code", "es_index_name": "python-xerxes-main", "timestamp": "%(asctime)s"}
+    datefmt=%Y-%m-%dT%H:%M:%S+0300

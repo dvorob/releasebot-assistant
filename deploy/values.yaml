@@ -1,0 +1,28 @@
+## YMreleaseBot configuration
+
+ymreleasebot:
+  name: 'xerxes-assistant'
+  count_replicas: 1
+  image: 'docker-ym.nexus.yamoney.ru/yamoney/xerxes-assistant'
+  tag: <value>
+  logging:
+    configmap_name: 'log-config-ymreleasebot-assistant'
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: '100m'
+    limits:
+      memory: 256Mi
+      cpu: '200m'
+  secrets:
+    telegram:
+      name: 'newbot'
+      value: <value>
+    jira:
+      name: 'jira'
+      pass: <value>
+      user: <value>
+    exchange:
+      name: 'exchange'
+      pass: <value>
+      user: <value>

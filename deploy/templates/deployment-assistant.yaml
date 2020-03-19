@@ -1,0 +1,47 @@
+{{ $conf := .Values.ymreleasebot }}
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: {{ $conf.name }}
+spec:
+  replicas: {{ $conf.count_replicas }}
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: {{ $conf.name }}
+    spec:
+      containers:
+        - image: {{ $conf.image }}:{{ $conf.tag }}
+          name: {{ $conf.name }}
+          imagePullPolicy: Always
+          volumeMounts:
+          - mountPath: /etc/xerxes/logging_assistant.conf
+            name: {{ $conf.logging.configmap_name }}
+            subPath: logging_assistant.conf
+          - mountPath: /opt/ssl
+            name: census
+            readOnly: true
+          resources:
+{{ toYaml $conf.resources | indent 12  }}
+          envFrom:
+            - prefix: secret_jira_
+              secretRef:
+                name: {{ $conf.secrets.jira.name }}
+            - prefix: secret_telegram_
+              secretRef:
+                name: {{ $conf.secrets.telegram.name }}
+            - prefix: secret_exchange_
+              secretRef:
+                name: {{ $conf.secrets.exchange.name }}
+      nodeSelector:
+        node-role.kubernetes.io/node: "true"
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: log-config-assistant
+        name: log-config-assistant
+      - name: census
+        secret:
+          secretName: census
