@@ -63,7 +63,8 @@ node('docker') {
                 docker.image(helm_image).inside("-v ${home_dir}/ansible/secret_vars/kube_config.yml:/opt/ymreleasebot/kube_config.yml -v ${home_dir}/ansible/secret_vars/values.yaml:/opt/ymreleasebot/secret_values.yaml -v ${home_dir}/deploy/:/opt/ymreleasebot/ -v ${home_dir}/tag-values.yaml:/opt/ymreleasebot/tag-values.yaml") {
                  sh '''
                  cd /opt/ymreleasebot &&
-                 c'''
+                 helm upgrade --install ymreleasebot-assistant . --kubeconfig /opt/ymreleasebot/kube_config.yml -f values.yaml -f tag-values.yaml -f secret_values.yaml --debug -n ymreleasebot
+                 '''
                  }
             }
         currentBuild.result = 'SUCCESS'
