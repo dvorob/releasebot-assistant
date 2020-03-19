@@ -40,8 +40,8 @@ spec:
       volumes:
       - configMap:
           defaultMode: 420
-          name: log-config-assistant
-        name: log-config-assistant
+          name: {{ $conf.logging.configmap_name }}
+        name: {{ $conf.logging.configmap_name }}
       - name: census
         secret:
           secretName: census
