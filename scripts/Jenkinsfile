@@ -31,7 +31,7 @@ node('docker') {
 
                 echo 'Build & push docker image'
                 def commit_id = sh(script:"git rev-parse --short HEAD", returnStdout: true).trim()
-                def prepare_tag_yaml = ["ymreleasebot": ["tag": commit_id + "-" + datePart + "T" + timePart]]]
+                def prepare_tag_yaml = ["ymreleasebot": ["tag": commit_id + "-" + datePart + "T" + timePart]]
                 writeYaml file: 'tag-values.yaml', data: prepare_tag_yaml
                 withDockerRegistry([ url: "https://${registry}", credentialsId: credentials.registryCredentialsId ]) {
                     def image_build = docker.build("${registry}/yamoney/${image}:${commit_id}-${datePart}T${timePart}", "-f Dockerfile --pull .")
