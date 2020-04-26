@@ -28,7 +28,6 @@ node('docker') {
             stage('docker build && push') {
                 echo 'Fetching repo'
                 checkout scm
-
                 echo 'Build & push docker image'
                 def commit_id = sh(script:"git rev-parse --short HEAD", returnStdout: true).trim()
                 def prepare_tag_yaml = ["ymreleasebot": ["tag": commit_id + "-" + datePart + "T" + timePart]]]
