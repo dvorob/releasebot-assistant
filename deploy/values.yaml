@@ -16,7 +16,7 @@ ymreleasebot:
       cpu: '200m'
   secrets:
     telegram:
-      name: 'newbot'
+      name: 'telegram'
       value: <value>
     jira:
       name: 'jira'

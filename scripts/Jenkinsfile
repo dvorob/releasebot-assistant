@@ -20,6 +20,10 @@ node('docker') {
         def image = 'xerxes-assistant'
         def home_dir = '/var/lib/jenkins/workspace/Common/YMreleaseBot/YMreleaseBot-assistant'
 
+        Date date = new Date()
+        String datePart = date.format("yyyy-MM-dd")
+        String timePart = date.format("HH-mm")
+
         try {
             stage('docker build && push') {
                 echo 'Fetching repo'
@@ -27,10 +31,10 @@ node('docker') {
 
                 echo 'Build & push docker image'
                 def commit_id = sh(script:"git rev-parse --short HEAD", returnStdout: true).trim()
-                def prepare_tag_yaml = ["ymreleasebot": ["tag": commit_id]]
+                def prepare_tag_yaml = ["ymreleasebot": ["tag": commit_id + "-" + datePart + "T" + timePart]]]
                 writeYaml file: 'tag-values.yaml', data: prepare_tag_yaml
                 withDockerRegistry([ url: "https://${registry}", credentialsId: credentials.registryCredentialsId ]) {
-                    def image_build = docker.build("${registry}/yamoney/${image}:${commit_id}", "-f Dockerfile --pull .")
+                    def image_build = docker.build("${registry}/yamoney/${image}:${commit_id}-${datePart}T${timePart}", "-f Dockerfile --pull .")
                     image_build.push()
                 }
             }
