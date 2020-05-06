@@ -302,7 +302,6 @@ def call_who_is_next(jira_con):
                                             % (finding_issue.fields.summary, finding_issue.permalink())
                     telegram_message = {'chat_id': recipients, 'text': txt_msg_to_recipients}
                     request_telegram_send(telegram_message)
-                    request_telegram_send(telegram_message)
         else:
             # Если продолжать нет необходимости, просто спим
             logger.debug('sleeping')
