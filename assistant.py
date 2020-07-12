@@ -10,6 +10,8 @@ import re
 import warnings
 from datetime import timedelta, datetime
 import requests
+from playhouse.pool import PooledMySQLDatabase
+from peewee import *
 from apscheduler.schedulers.background import BlockingScheduler
 from jira import JIRA
 from exchangelib import DELEGATE, Configuration, Credentials, \
@@ -17,9 +19,51 @@ from exchangelib import DELEGATE, Configuration, Credentials, \
 from exchangelib.ewsdatetime import UTC_NOW
 from exchangelib.protocol import BaseProtocol, NoVerifyHTTPAdapter
 import config
+import ldap3
+from ldap3 import Server, Connection, SIMPLE, SYNC, ASYNC, SUBTREE, ALL
 
 # Отключаем предупреждения от SSL
 warnings.filterwarnings('ignore')
+
+__all__ = ['MysqlPool']
+
+config_mysql = PooledMySQLDatabase(
+    config.db_name,
+    host=config.db_host,
+    user=config.db_user,
+    passwd=config.db_pass,
+    max_connections=8,
+    stale_timeout=300)
+
+class BaseModel(Model):
+    class Meta:
+        database = config_mysql
+
+class Users(BaseModel):
+    id = IntegerField()
+    account_name = CharField(unique=True)
+    full_name = CharField()
+    tg_login = CharField()
+    working_status = CharField()
+    notification = CharField(default='none')
+    admin = IntegerField(default=0)
+
+class MysqlPool:
+    def __init__(self):
+        self.db = config_mysql
+
+    def db_set_users(self, account_name, full_name, tg_login, working_status):
+        try:
+            self.db.connect()
+            db_users, _ = Users.get_or_create(account_name=account_name)
+            db_users.full_name = full_name
+            db_users.tg_login = tg_login
+            db_users.working_status = working_status
+            db_users.save()
+        except Exception:
+            print('exception in db_set_users')
+        finally:
+            self.db.close()
 
 
 def statistics_json(jira_con):
@@ -129,6 +173,29 @@ def calculate_statistics(jira_con):
     else:
         logger.info('No, today is a holiday, I don\'t want to count statistics')
 
+
+def fill_duty_info_from_exchange(after_days=None):
+    """
+        Go to Exchange to AdminsOnDuty Calendar
+        Get the Info about dutymen
+        Fill aerospike DB
+    """
+        msg = 'Дежурят сейчас:\n'
+        delta = 0 if not after_days else int(after_days) * 24 * 60
+
+        cal_start = UTC_NOW() + timedelta(minutes=delta)
+        cal_end = UTC_NOW() + timedelta(minutes=delta + 1)
+
+        # go to exchange for knowledge
+        msg += ex_duty(cal_start, cal_end)
+
+        logger.info('I find duty\n%s', msg)
+        # Запишем всех найденных дежурных на сегодня в aerospike, чтобы
+        # ручка /id дергала не exchange, а aerospike
+        if not after_days:
+            request_write_aerospike(item='duty',
+                                    bins={str(datetime.today().strftime("%Y-%m-%d")): msg},
+                                    aerospike_set='duty_admin')
 
 def get_duty_info(after_days=None):
     """
@@ -407,35 +474,6 @@ def who_is_next(jira_con):
                             return task
 
 
-def employee_dismissed():
-    """
-        Запрос в census - верни сотрдуников из групп, указанных в department_id
-        с их текущим статусом - уволен или нет.
-        Положит результат в aerospike, из которого будет брать инфо
-        informer, decorator restricted.
-        :return: nothing
-    """
-    logger.info('employee_dismissed started')
-    url = '%s/employee_dismissed' % config.staff_url
-    ssl_ca = 'ssl/ca.pem'
-    output_dict = dict()
-    for depart_id in config.department_id.values():
-        r = requests.post(url, verify=ssl_ca, json={'depart_id': depart_id})
-
-        for all_employee_it_department in r.json()['result']:
-            employee_login = all_employee_it_department['login']
-            status_dismissed = all_employee_it_department['official']['is_dismissed']
-            employee_accounts = all_employee_it_department['accounts']
-            for type_accounts in employee_accounts:
-                if type_accounts['type'] == 'telegram':
-                    employee_tg = type_accounts['value']
-                    output_dict.update({employee_tg: {'login': employee_login,
-                                                      'is_dismissed': status_dismissed}})
-    request_write_aerospike(item='access_denied', bins={'all_employee': output_dict},
-                            aerospike_set='access_denied')
-    logger.info('I successfully completed employee_dismissed function')
-
-
 def weekend_duty():
     """
         Send message to admin, who will duty on weekend
@@ -471,6 +509,40 @@ def weekend_duty():
     logger.info('def weekend_duty successfully finished')
 
 
+def get_ad_users():
+    """
+        Сходить в AD, забрать логины, tg-логины, рабочий статус с преобразованием в (working, dismissed)
+    """
+    users_dict = {}
+    server = Server(ad_host)
+    conn = Connection(server,user=ex_user,password=ex_pass)
+    conn.bind()
+    conn.search(base_dn,ldap_filter,SUBTREE,attributes=ldap_attrs)
+
+    for entry in conn.entries:
+        if not re.search("(?i)OU=_Служебные", str(entry.distinguishedName)): # Убрать служебные учетки
+            users_dict [str(entry.sAMAccountName)] = {}
+            users_dict [str(entry.sAMAccountName)] ['account_name'] = str(entry.sAMAccountName)
+            users_dict [str(entry.sAMAccountName)] ['full_name'] = str(entry.cn)
+            if len(entry.extensionattribute4) == 0:
+                tg_login = ''
+            else:
+                tg_login = str(entry.extensionattribute4).split(';')[0]
+
+            users_dict [str(entry.sAMAccountName)] ['tg_login'] = tg_login
+
+            if re.search("(?i)OU=_Уволенные сотрудники", str(entry.distinguishedName)):
+                working_status = 'dismissed'
+            else:
+                working_status = 'working'
+            users_dict [str(entry.sAMAccountName)] ['working_status'] = working_status
+    
+    mysql = MysqlPool()
+
+    for k, v in users_dict.items():
+        mysql.db_set_users(v['account_name'], v['full_name'], v['tg_login'], v['working_status'])
+
+
 if __name__ == "__main__":
 
     options = {
@@ -499,7 +571,7 @@ if __name__ == "__main__":
     scheduler.add_job(lambda: call_who_is_next(jira_connect),
                       'interval', minutes=1, max_instances=1)
 
-    scheduler.add_job(employee_dismissed, 'cron', day_of_week='*', hour=20, minute=1)
+    scheduler.add_job(get_ad_users, 'cron', day_of_week='*', hour='*', minute=1)
 
     scheduler.add_job(weekend_duty, 'cron', day_of_week='fri', hour=14, minute=1)
 
