@@ -180,6 +180,9 @@ def fill_duty_info_from_exchange(after_days=None):
         Get the Info about dutymen
         Fill aerospike DB
     """
+    try:
+        logger.info('fill_duty_info_from_exchange started!')
+
         msg = 'Дежурят сейчас:\n'
         delta = 0 if not after_days else int(after_days) * 24 * 60
 
@@ -196,6 +199,8 @@ def fill_duty_info_from_exchange(after_days=None):
             request_write_aerospike(item='duty',
                                     bins={str(datetime.today().strftime("%Y-%m-%d")): msg},
                                     aerospike_set='duty_admin')
+    except Exception:
+        logger.exception('exception in fill_duty_info_from_exchange')
 
 def get_duty_info(after_days=None):
     """
