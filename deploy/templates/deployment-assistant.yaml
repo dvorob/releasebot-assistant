@@ -29,6 +29,9 @@ spec:
             - prefix: secret_jira_
               secretRef:
                 name: {{ $conf.secrets.jira.name }}
+            - prefix: secret_mysql_
+              secretRef:
+                name: {{ $conf.secrets.mysql.name }}
             - prefix: secret_telegram_
               secretRef:
                 name: {{ $conf.secrets.telegram.name }}

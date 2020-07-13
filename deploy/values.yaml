@@ -5,6 +5,12 @@ ymreleasebot:
   count_replicas: 1
   image: 'docker-ym.nexus.yamoney.ru/yamoney/xerxes-assistant'
   tag: <value>
+  mysql:
+    name: mysql
+    port:
+      name: mysql-client
+      value: 3306
+    ip: 10.200.51.2
   logging:
     configmap_name: 'log-config-ymreleasebot-assistant'
   resources:
@@ -18,6 +24,10 @@ ymreleasebot:
     telegram:
       name: 'telegram'
       value: <value>
+    mysql:
+      name: 'mysql'
+      pass: <value>
+      user: <value>
     jira:
       name: 'jira'
       pass: <value>
