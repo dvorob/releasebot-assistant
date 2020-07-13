@@ -25,6 +25,7 @@ from ldap3 import Server, Connection, SIMPLE, SYNC, ASYNC, SUBTREE, ALL
 # Отключаем предупреждения от SSL
 warnings.filterwarnings('ignore')
 
+# Настраиваем работу с Mysql. Надо бы вынести это в ручку API
 __all__ = ['MysqlPool']
 
 config_mysql = PooledMySQLDatabase(
@@ -518,11 +519,15 @@ def get_ad_users():
     """
         Сходить в AD, забрать логины, tg-логины, рабочий статус с преобразованием в (working, dismissed)
     """
-    users_dict = {}
-    server = Server(ad_host)
-    conn = Connection(server,user=ex_user,password=ex_pass)
-    conn.bind()
-    conn.search(base_dn,ldap_filter,SUBTREE,attributes=ldap_attrs)
+    logger.info('get_ad_users started')
+    try:
+        users_dict = {}
+        server = Server(ad_host)
+        conn = Connection(server,user=ex_user,password=ex_pass)
+        conn.bind()
+        conn.search(base_dn,ldap_filter,SUBTREE,attributes=ldap_attrs)
+    except Exception:
+        logger.exception('exception in get_ad_users')
 
     for entry in conn.entries:
         if not re.search("(?i)OU=_Служебные", str(entry.distinguishedName)): # Убрать служебные учетки
@@ -542,10 +547,12 @@ def get_ad_users():
                 working_status = 'working'
             users_dict [str(entry.sAMAccountName)] ['working_status'] = working_status
     
+    logger.info('Mysql: trying to save users to Users table')
     mysql = MysqlPool()
 
     for k, v in users_dict.items():
         mysql.db_set_users(v['account_name'], v['full_name'], v['tg_login'], v['working_status'])
+    logger.info('Mysql: Users saving is completed')
 
 
 if __name__ == "__main__":
@@ -570,13 +577,13 @@ if __name__ == "__main__":
                       hour=23, minute=50)
 
     # Кто сегодня дежурит
-    scheduler.add_job(get_duty_info, 'cron', day_of_week='*', hour=10, minute=1)
+    scheduler.add_job(get_duty_info, 'cron', day_of_week='*', hour='*', minute=1)
 
     # Who is next?
     scheduler.add_job(lambda: call_who_is_next(jira_connect),
                       'interval', minutes=1, max_instances=1)
 
-    scheduler.add_job(get_ad_users, 'cron', day_of_week='*', hour='*', minute=1)
+    scheduler.add_job(get_ad_users, 'cron', day_of_week='*', hour='*', minute='*/30')
 
     scheduler.add_job(weekend_duty, 'cron', day_of_week='fri', hour=14, minute=1)
 
