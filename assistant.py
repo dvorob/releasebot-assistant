@@ -259,13 +259,13 @@ def get_duty_info(after_days=None):
                 set_chat_id = set()
                 for chat_id, name in fio_chat_id.items():
                     if name in today_duty_adm_name:
-                        msg = 'Крепись сестрица, ты сегодня дежуришь.' \
-                            if name == 'Антонина Ким' else 'Крепись брат, ты сегодня дежуришь.'
-                        telegram_message = {'chat_id': [chat_id],
-                                            'text': msg}
-                        request_telegram_send(telegram_message)
+                        # msg = 'Крепись сестрица, ты сегодня дежуришь.' \
+                        #     if name == 'Антонина Ким' else 'Крепись брат, ты сегодня дежуришь.'
+                        # telegram_message = {'chat_id': [chat_id],
+                        #                     'text': msg}
+                        # request_telegram_send(telegram_message)
                         set_chat_id.add(chat_id)
-                        logger.info('I sent notification to %s=%s', name, chat_id)
+                        # logger.info('I sent notification to %s=%s', name, chat_id)
                 # we need put in aerospike dict with type value of list (was just set):
                 # '2019-09-04': ['123', '456']
                 # because further, when we will response via api json, we will get mistake
@@ -276,6 +276,22 @@ def get_duty_info(after_days=None):
                                         aerospike_set='duty_admin')
     except Exception:
         logger.exception('get_duty_info')
+
+
+def notify_today_duties():
+    """
+        Нотификация дежурным утром
+    """
+    duties_chat_id = request_read_aerospike(item='today_duty_adm_name', aerospike_set='duty_admin')
+    logger.info('today duties to notify %s', duties_chat_id)
+
+    today = datetime.today().strftime("%Y-%m-%d")
+
+    for chat_id in duties_chat_id[today]:
+        msg = 'Крепись, ты сегодня дежуришь.'
+        telegram_message = {'chat_id': [chat_id], 'text': msg}
+        request_telegram_send(telegram_message)
+        logger.info('I sent today duty notification to %s', chat_id)
 
 
 def ex_connect():
@@ -522,10 +538,10 @@ def get_ad_users():
     logger.info('get_ad_users started')
     try:
         users_dict = {}
-        server = Server(ad_host)
-        conn = Connection(server,user=ex_user,password=ex_pass)
+        server = Server(config.ad_host)
+        conn = Connection(server,user=config.ex_user,password=config.ex_pass)
         conn.bind()
-        conn.search(base_dn,ldap_filter,SUBTREE,attributes=ldap_attrs)
+        conn.search(config.base_dn,config.ldap_filter,SUBTREE,attributes=config.ldap_attrs)
     except Exception:
         logger.exception('exception in get_ad_users')
 
@@ -586,6 +602,8 @@ if __name__ == "__main__":
     scheduler.add_job(get_ad_users, 'cron', day_of_week='*', hour='*', minute='*/30')
 
     scheduler.add_job(weekend_duty, 'cron', day_of_week='fri', hour=14, minute=1)
+
+    scheduler.add_job(notify_today_duties, 'cron', day_of_week='*', hour=9, minute=31)
 
     # Запускаем расписание
     scheduler.start()
