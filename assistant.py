@@ -223,12 +223,6 @@ def get_duty_info(after_days=None):
         msg += ex_duty(cal_start, cal_end)
 
         logger.info('I find duty\n%s', msg)
-        # Запишем всех найденных дежурных на сегодня в aerospike, чтобы
-        # ручка /id дергала не exchange, а aerospike
-        if not after_days:
-            request_write_aerospike(item='duty',
-                                    bins={str(datetime.today().strftime("%Y-%m-%d")): msg},
-                                    aerospike_set='duty_admin')
 
         # Если то, что мы нашли, не пусто,то вытащим дежурного по порталу, биллингу и инфре,
         # дальше get_key словаря, в котором лежат фио_tgusername админов и вытащим
@@ -259,13 +253,13 @@ def get_duty_info(after_days=None):
                 set_chat_id = set()
                 for chat_id, name in fio_chat_id.items():
                     if name in today_duty_adm_name:
-                        # msg = 'Крепись сестрица, ты сегодня дежуришь.' \
-                        #     if name == 'Антонина Ким' else 'Крепись брат, ты сегодня дежуришь.'
-                        # telegram_message = {'chat_id': [chat_id],
-                        #                     'text': msg}
-                        # request_telegram_send(telegram_message)
+                        msg = 'Крепись сестрица, ты сегодня дежуришь.' \
+                            if name == 'Антонина Ким' else 'Крепись брат, ты сегодня дежуришь.'
+                        telegram_message = {'chat_id': [chat_id],
+                                            'text': msg}
+                        request_telegram_send(telegram_message)
                         set_chat_id.add(chat_id)
-                        # logger.info('I sent notification to %s=%s', name, chat_id)
+                        logger.info('I sent notification to %s=%s', name, chat_id)
                 # we need put in aerospike dict with type value of list (was just set):
                 # '2019-09-04': ['123', '456']
                 # because further, when we will response via api json, we will get mistake
@@ -276,6 +270,35 @@ def get_duty_info(after_days=None):
                                         aerospike_set='duty_admin')
     except Exception:
         logger.exception('get_duty_info')
+
+
+def duties_sync_from_exchange():
+    """
+        Ходит в Exchange и выгребает информацию о дежурствах. Помещает информацию в БД (пока aerospike).
+        Все остальные методы ходят за инфой о дежурных в БД.
+        Вызывается по cron-у, следовательно изменения в календаре отразятся в боте
+    """
+    try:
+        logger.info('get_duty_info started!')
+
+        # Go to Exchange calendar and get duites for 7 next days
+        for i in range(0, 7):
+
+            msg = 'Дежурят сейчас:\n'
+
+            cal_start = UTC_NOW() + timedelta(i)
+            cal_end = UTC_NOW() + timedelta(i + 1)
+            str_date = str((datetime.today() + timedelta(i)).strftime("%Y-%m-%d"))
+
+            # go to exchange for knowledge
+            msg += ex_duty(cal_start, cal_end)
+
+            logger.info('I find duty %s', msg)
+            request_write_aerospike(item='duty',
+                                    bins={str_date: msg},
+                                    aerospike_set='duty_admin')
+    except Exception:
+        logger.exception('exception in duties_sync_from_exchange')
 
 
 def notify_today_duties():
@@ -593,7 +616,7 @@ if __name__ == "__main__":
                       hour=23, minute=50)
 
     # Кто сегодня дежурит
-    scheduler.add_job(get_duty_info, 'cron', day_of_week='*', hour='*', minute=1)
+    scheduler.add_job(get_duty_info, 'cron', day_of_week='*', hour=10, minute=1)
 
     # Who is next?
     scheduler.add_job(lambda: call_who_is_next(jira_connect),
@@ -601,9 +624,12 @@ if __name__ == "__main__":
 
     scheduler.add_job(get_ad_users, 'cron', day_of_week='*', hour='*', minute='*/30')
 
+    scheduler.add_job(duties_sync_from_exchange, 'cron', day_of_week='*', hour='*', minute=30)
+
     scheduler.add_job(weekend_duty, 'cron', day_of_week='fri', hour=14, minute=1)
 
-    scheduler.add_job(notify_today_duties, 'cron', day_of_week='*', hour=9, minute=31)
+
+    # scheduler.add_job(notify_today_duties, 'cron', day_of_week='*', hour=9, minute=31)
 
     # Запускаем расписание
     scheduler.start()
