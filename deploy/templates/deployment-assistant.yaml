@@ -1,10 +1,13 @@
 {{ $conf := .Values.ymreleasebot }}
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ $conf.name }}
 spec:
   replicas: {{ $conf.count_replicas }}
+  selector:
+    matchLabels:
+      app: {{ $conf.name }}
   strategy:
     type: RollingUpdate
   template:
