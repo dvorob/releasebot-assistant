@@ -286,8 +286,8 @@ def duties_sync_from_exchange():
 
             msg = 'Дежурят сейчас:\n'
 
-            cal_start = UTC_NOW() + timedelta(i)
-            cal_end = UTC_NOW() + timedelta(i)
+            cal_start = UTC_NOW() + timedelta(i+0.5)
+            cal_end = UTC_NOW() + timedelta(i+0.5)
             str_date = str((datetime.today() + timedelta(i)).strftime("%Y-%m-%d"))
 
             # go to exchange for knowledge
