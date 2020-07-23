@@ -72,4 +72,4 @@ db_name = 'xerxes'
 ad_host = 'ivan-voucher.yamoney.ru'
 base_dn = 'OU=Сотрудники Компании,DC=yamoney,DC=ru'
 ldap_filter = '(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))'
-ldap_attrs = ['cn','sAMAccountName','distinguishedName','extensionattribute4','memberOf']
+ldap_attrs = ['cn','sAMAccountName','distinguishedName','extensionattribute4','memberOf','mail']

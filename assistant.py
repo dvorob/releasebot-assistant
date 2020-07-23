@@ -46,6 +46,7 @@ class Users(BaseModel):
     full_name = CharField()
     tg_login = CharField()
     working_status = CharField()
+    email = CharField()
     notification = CharField(default='none')
     admin = IntegerField(default=0)
 
@@ -53,13 +54,14 @@ class MysqlPool:
     def __init__(self):
         self.db = config_mysql
 
-    def db_set_users(self, account_name, full_name, tg_login, working_status):
+    def db_set_users(self, account_name, full_name, tg_login, working_status, email):
         try:
             self.db.connect()
             db_users, _ = Users.get_or_create(account_name=account_name)
             db_users.full_name = full_name
             db_users.tg_login = tg_login
             db_users.working_status = working_status
+            db_users.email = email
             db_users.save()
         except Exception:
             print('exception in db_set_users')
@@ -573,6 +575,7 @@ def get_ad_users():
             users_dict [str(entry.sAMAccountName)] = {}
             users_dict [str(entry.sAMAccountName)] ['account_name'] = str(entry.sAMAccountName)
             users_dict [str(entry.sAMAccountName)] ['full_name'] = str(entry.cn)
+            users_dict [str(entry.sAMAccountName)] ['email'] = str(entry.mail)
             if len(entry.extensionattribute4) == 0:
                 tg_login = ''
             else:
@@ -590,7 +593,7 @@ def get_ad_users():
     mysql = MysqlPool()
 
     for k, v in users_dict.items():
-        mysql.db_set_users(v['account_name'], v['full_name'], v['tg_login'], v['working_status'])
+        mysql.db_set_users(v['account_name'], v['full_name'], v['tg_login'], v['working_status'], v['email'])
     logger.info('Mysql: Users saving is completed')
 
 
