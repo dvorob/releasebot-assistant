@@ -289,9 +289,9 @@ def duties_sync_from_exchange():
             msg = 'Дежурят сейчас:\n'
             # Вычисляем правильный день для дежурств, с учетом наших 10-часовых особенностей
             if int(datetime.today().strftime("%H")) < int(10):
-                duty_date = (datetime.today() - timedelta(1)).strftime("%Y-%m-%d")
+                duty_date = (datetime.today() + timedelta(i) - timedelta(1)).strftime("%Y-%m-%d")
             else:
-                duty_date = datetime.today().strftime("%Y-%m-%d") 
+                duty_date = (datetime.today() + timedelta(i)).strftime("%Y-%m-%d") 
             cal_start = UTC_NOW() + timedelta(i)
             cal_end = UTC_NOW() + timedelta(i)
 
