@@ -298,7 +298,7 @@ def duties_sync_from_exchange():
             # go to exchange for knowledge
             msg += ex_duty(cal_start, cal_end)
 
-            logger.info('I find duty for %s %s', str_date, msg)
+            logger.info('I find duty for %s %s', str(duty_date), msg)
             request_write_aerospike(item='duty',
                                     bins={str(duty_date): msg},
                                     aerospike_set='duty_admin')
