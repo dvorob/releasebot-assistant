@@ -287,17 +287,20 @@ def duties_sync_from_exchange():
         for i in range(0, 7):
 
             msg = 'Дежурят сейчас:\n'
-
-            cal_start = UTC_NOW() + timedelta(i+0.5)
-            cal_end = UTC_NOW() + timedelta(i+0.5)
-            str_date = str((datetime.today() + timedelta(i)).strftime("%Y-%m-%d"))
+            # Вычисляем правильный день для дежурств, с учетом наших 10-часовых особенностей
+            if int(datetime.today().strftime("%H")) < int(10):
+                duty_date = (datetime.today() - timedelta(1)).strftime("%Y-%m-%d")
+            else:
+                duty_date = datetime.today().strftime("%Y-%m-%d") 
+            cal_start = UTC_NOW() + timedelta(i)
+            cal_end = UTC_NOW() + timedelta(i)
 
             # go to exchange for knowledge
             msg += ex_duty(cal_start, cal_end)
 
             logger.info('I find duty for %s %s', str_date, msg)
             request_write_aerospike(item='duty',
-                                    bins={str_date: msg},
+                                    bins={str(duty_date): msg},
                                     aerospike_set='duty_admin')
     except Exception:
         logger.exception('exception in duties_sync_from_exchange')
