@@ -295,7 +295,7 @@ def duties_sync_from_exchange():
             # go to exchange for knowledge
             msg += ex_duty(cal_start, cal_end)
 
-            logger.info('I find duty %s', msg)
+            logger.info('I find duty for %s %s', str_date, msg)
             request_write_aerospike(item='duty',
                                     bins={str_date: msg},
                                     aerospike_set='duty_admin')
@@ -627,7 +627,7 @@ if __name__ == "__main__":
 
     scheduler.add_job(get_ad_users, 'cron', day_of_week='*', hour='*', minute='*/30')
 
-    scheduler.add_job(duties_sync_from_exchange, 'cron', day_of_week='*', hour='*', minute=30)
+    scheduler.add_job(duties_sync_from_exchange, 'cron', day_of_week='*', hour='*', minute='*')
 
     scheduler.add_job(weekend_duty, 'cron', day_of_week='fri', hour=14, minute=1)
 
