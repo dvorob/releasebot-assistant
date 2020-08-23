@@ -54,8 +54,6 @@ jira_filter_wip = 'project = ADMSYS AND ' \
                   'status not in (Closed, Resolved, "Waiting release") ' \
                   'ORDER BY priority DESC, updatedDate ASC'
 
-staff_url = 'https://xerxes-census:8444'
-
 api = 'http://xerxes-api-v1/api-v1'
 api_chat_id = f'{api}/chat-id'
 api_aerospike_read = f'{api}/aerospike/read'

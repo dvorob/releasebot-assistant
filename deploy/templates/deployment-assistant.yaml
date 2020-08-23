@@ -20,9 +20,6 @@ spec:
           - mountPath: /etc/xerxes/logging_assistant.conf
             name: {{ $conf.logging.configmap_name }}
             subPath: logging_assistant.conf
-          - mountPath: /opt/ssl
-            name: census
-            readOnly: true
           resources:
 {{ toYaml $conf.resources | indent 12  }}
           envFrom:
@@ -45,6 +42,3 @@ spec:
           defaultMode: 420
           name: {{ $conf.logging.configmap_name }}
         name: {{ $conf.logging.configmap_name }}
-      - name: census
-        secret:
-          secretName: census
