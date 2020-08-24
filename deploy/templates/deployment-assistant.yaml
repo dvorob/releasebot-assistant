@@ -35,9 +35,6 @@ spec:
             - prefix: secret_telegram_
               secretRef:
                 name: {{ $conf.secrets.telegram.name }}
-            - prefix: secret_exchange_
-              secretRef:
-                name: {{ $conf.secrets.exchange.name }}
       nodeSelector:
         node-role.kubernetes.io/node: "true"
       volumes:
