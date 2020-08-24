@@ -1,10 +1,13 @@
 {{ $conf := .Values.ymreleasebot }}
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ $conf.name }}
 spec:
   replicas: {{ $conf.count_replicas }}
+  selector:
+    matchLabels:
+      app: {{ $conf.name }}
   strategy:
     type: RollingUpdate
   template:
@@ -20,9 +23,6 @@ spec:
           - mountPath: /etc/xerxes/logging_assistant.conf
             name: {{ $conf.logging.configmap_name }}
             subPath: logging_assistant.conf
-          - mountPath: /opt/ssl
-            name: census
-            readOnly: true
           resources:
 {{ toYaml $conf.resources | indent 12  }}
           envFrom:
@@ -45,6 +45,3 @@ spec:
           defaultMode: 420
           name: {{ $conf.logging.configmap_name }}
         name: {{ $conf.logging.configmap_name }}
-      - name: census
-        secret:
-          secretName: census
