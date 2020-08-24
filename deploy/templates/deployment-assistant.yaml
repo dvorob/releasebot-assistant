@@ -14,6 +14,9 @@ spec:
     metadata:
       labels:
         app: {{ $conf.name }}
+        app_type: {{ $conf.app_type }}
+        app_name: {{ $conf.app_name }}
+        kafka_log_topic: {{ $conf.kafka_log_topic }}
     spec:
       containers:
         - image: {{ $conf.image }}:{{ $conf.tag }}
