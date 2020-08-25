@@ -14,8 +14,7 @@ from playhouse.pool import PooledMySQLDatabase
 from peewee import *
 from apscheduler.schedulers.background import BlockingScheduler
 from jira import JIRA
-from exchangelib import DELEGATE, Configuration, Credentials, \
-    Account
+from exchangelib import DELEGATE, Configuration, Credentials, Account
 from exchangelib.ewsdatetime import UTC_NOW
 from exchangelib.protocol import BaseProtocol, NoVerifyHTTPAdapter
 import config
@@ -629,8 +628,8 @@ if __name__ == "__main__":
                       'interval', minutes=1, max_instances=1)
 
     scheduler.add_job(get_ad_users, 'cron', day_of_week='*', hour='*', minute='*/30')
-
-    scheduler.add_job(duties_sync_from_exchange, 'cron', day_of_week='*', hour='*', minute='*/30')
+    # Поскольку в 10:00 в календаре присутствует двое дежурных - за вчера и за сегодня, процедура запускается в 5, 25 и 45 минут, чтобы не натыкаться на дубли и не вычищать их
+    scheduler.add_job(duties_sync_from_exchange, 'cron', day_of_week='*', hour='*', minute='5-59/20')
 
     scheduler.add_job(weekend_duty, 'cron', day_of_week='fri', hour=14, minute=1)
 
