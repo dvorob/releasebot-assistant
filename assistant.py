@@ -579,7 +579,8 @@ def get_ad_users():
             users_dict [str(entry.sAMAccountName)] ['full_name'] = str(entry.cn)
             users_dict [str(entry.sAMAccountName)] ['email'] = str(entry.mail)
             if len(entry.extensionattribute4) > 0:
-                users_dict [str(entry.sAMAccountName)] ['tg_login'] = str(entry.extensionattribute4).split(';')[0]
+                if len(str(entry.extensionattribute4).split(';')[0]) > 0:
+                    users_dict [str(entry.sAMAccountName)] ['tg_login'] = str(entry.extensionattribute4).split(';')[0]
 
             if re.search("(?i)OU=_Уволенные сотрудники", str(entry.distinguishedName)):
                 working_status = 'dismissed'
