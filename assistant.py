@@ -44,6 +44,7 @@ class Users(BaseModel):
     account_name = CharField(unique=True)
     full_name = CharField()
     tg_login = CharField()
+    tg_id = CharField()
     working_status = CharField()
     email = CharField()
     notification = CharField(default='none')
@@ -61,7 +62,7 @@ class MysqlPool:
     def __init__(self):
         self.db = config_mysql
 
-    async def set_users(self, account_name, full_name, tg_login, working_status, email, date_update):
+    def set_users(self, account_name, full_name, tg_login, working_status, email, date_update):
         try:
             self.db.connect()
             db_users, _ = Users.get_or_create(account_name=account_name)
@@ -69,7 +70,7 @@ class MysqlPool:
             db_users.tg_login = tg_login
             db_users.working_status = working_status
             db_users.email = email
-            db_users.date_update = date_update
+            db_users.date_update = datetime.now()
             db_users.save()
         except Exception as e:
             logger.exception('exception in set_users %s', str(e))
