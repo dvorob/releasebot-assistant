@@ -226,9 +226,11 @@ def get_dismissed_users():
         conn.bind()
         db_users = []
         td = datetime.today() - timedelta(1)
-        db_query = Users.select().where(
-            (Users.date_update.is_null() | Users.date_update < td) & Users.working_status == 'working')
-
+        db_query = Users.select().where(Users.working_status == 'working',
+            (
+                (Users.date_update < td) |
+                (Users.date_update.is_null())
+             ))
         for v in db_query:
             db_users.append((vars(v))['__data__'])
 
