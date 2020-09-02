@@ -61,7 +61,7 @@ class MysqlPool:
     def __init__(self):
         self.db = config_mysql
 
-    def set_users(self, account_name, full_name, tg_login, working_status, email, date_update):
+    await def set_users(self, account_name, full_name, tg_login, working_status, email, date_update):
         try:
             self.db.connect()
             db_users, _ = Users.get_or_create(account_name=account_name)
@@ -591,6 +591,7 @@ def sync_users_from_ad():
             users_dict [str(entry.sAMAccountName)] ['account_name'] = str(entry.sAMAccountName)
             users_dict [str(entry.sAMAccountName)] ['full_name'] = str(entry.cn)
             users_dict [str(entry.sAMAccountName)] ['email'] = str(entry.mail)
+            users_dict [str(entry.sAMAccountName)] ['tg_login'] = ''
             if len(entry.extensionattribute4) > 0:
                 if len(str(entry.extensionattribute4).split(';')[0]) > 0:
                     users_dict [str(entry.sAMAccountName)] ['tg_login'] = str(entry.extensionattribute4).split(';')[0]
