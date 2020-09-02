@@ -68,7 +68,7 @@ class MysqlPool:
         # Если передадим tg_id для существующего пользователя, заполнится только это поле
         logger.info('set users started for %s ', account_name)
         try:
-            if not self.db.is_closed()
+            if not self.db.is_closed():
                 self.db.close()
             self.db.connect()
             db_users, _ = Users.get_or_create(account_name=account_name)
