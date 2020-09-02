@@ -576,11 +576,11 @@ def sync_users_from_ad():
     """
     logger.info('sync users from ad started')
     try:
-        users_dict = {}
         server = Server(config.ad_host)
         conn = Connection(server,user=config.ex_user,password=config.ex_pass)
         conn.bind()
         conn.search(config.base_dn,config.ldap_filter,SUBTREE,attributes=config.ldap_attrs)
+        users_dict = {}
     except Exception:
         logger.exception('exception in get_ad_users')
 
@@ -604,10 +604,11 @@ def sync_users_from_ad():
 
         mysql = MysqlPool()
 
-        for k, v in users_dict.items():
-            logger.info('Sync users from ad users_dict %s', v)
-            mysql.set_users(v['account_name'], v['full_name'], v['tg_login'], v['working_status'], v['email'], v['date_update'])
-        logger.info('Mysql: Users saving is completed')
+    logger.info(users_dict)
+    for k, v in users_dict.items():
+        logger.info('Sync users from ad users_dict %s', v)
+        mysql.set_users(v['account_name'], v['full_name'], v['tg_login'], v['working_status'], v['email'], v['date_update'])
+    logger.info('Mysql: Users saving is completed')
 
 
 if __name__ == "__main__":
