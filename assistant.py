@@ -224,12 +224,15 @@ def get_dismissed_users():
         server = Server(ad_host)
         conn = Connection(server,user=config.ex_user,password=config.ex_pass)
         conn.bind()
+        db_users = []
         td = datetime.today() - timedelta(1)
         db_query = Users.select().where(
             (Users.date_update.is_null() | Users.date_update < td) & Users.working_status == 'working')
 
         for v in db_query:
             db_users.append((vars(v))['__data__'])
+
+        logger.info('Found potential dismissed users %s', db_users)
 
         for v in db_users:
             conn.search(config.base_dn,'(&(objectCategory=person)(objectClass=user)(sAMAccountName='+v["account_name"]+'))',SUBTREE,attributes=config.ldap_attrs)
@@ -692,7 +695,7 @@ if __name__ == "__main__":
     scheduler.add_job(lambda: call_who_is_next(jira_connect), 'interval', minutes=1, max_instances=1)
 
     # Проверка, не уволились ли сотрудники. Запускается раз в сутки
-    scheduler.add_job(get_dismissed_users, 'cron', day_of_week='*', hour='*', minute='*/5')
+    scheduler.add_job(get_dismissed_users, 'cron', day_of_week='*', hour='*', minute='*/2')
 
     scheduler.add_job(sync_users_from_ad, 'cron', day_of_week='*', hour='*', minute='30')
     # Поскольку в 10:00 в календаре присутствует двое дежурных - за вчера и за сегодня, процедура запускается в 5, 25 и 45 минут, чтобы не натыкаться на дубли и не вычищать их
