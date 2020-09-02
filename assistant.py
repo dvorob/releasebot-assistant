@@ -218,6 +218,7 @@ def calculate_statistics(jira_con):
 
 
 def get_dismissed_users(self):
+    logger.info('start get dismissed users')
     try:
         mysql = MysqlPool()
         server = Server(ad_host)
@@ -234,6 +235,7 @@ def get_dismissed_users(self):
             conn.search(config.base_dn,'(&(objectCategory=person)(objectClass=user)(sAMAccountName='+v["account_name"]+'))',SUBTREE,attributes=config.ldap_attrs)
             for entry in conn.entries:
                 if re.search("Уволенные", str(entry.distinguishedName)):
+                    logger.info('%s was dismissed', v['account_name'])
                     mysql.set_users(v['account_name'], full_name=None, tg_login=None, working_status='dismissed', tg_id=None, notification=None, email=None)
                 else:
                     logger.info('get dismissed found that %s is still working', v["account_name"])
@@ -623,7 +625,7 @@ def sync_users_from_ad():
     """
         Сходить в AD, забрать логины, tg-логины, рабочий статус с преобразованием в (working, dismissed)
     """
-    logger.info('sync users from ad started')
+    logger.debug('sync users from ad started')
     try:
         server = Server(config.ad_host)
         conn = Connection(server,user=config.ex_user,password=config.ex_pass)
@@ -689,7 +691,10 @@ if __name__ == "__main__":
     # Who is next?
     scheduler.add_job(lambda: call_who_is_next(jira_connect), 'interval', minutes=1, max_instances=1)
 
-    scheduler.add_job(sync_users_from_ad, 'cron', day_of_week='*', hour='*', minute='*/5')
+    # Проверка, не уволились ли сотрудники. Запускается раз в сутки
+    scheduler.add_job(get_dismissed_users, 'cron', day_of_week='*', hour='*', minute='*/5')
+
+    scheduler.add_job(sync_users_from_ad, 'cron', day_of_week='*', hour='*', minute='30')
     # Поскольку в 10:00 в календаре присутствует двое дежурных - за вчера и за сегодня, процедура запускается в 5, 25 и 45 минут, чтобы не натыкаться на дубли и не вычищать их
     scheduler.add_job(duties_sync_from_exchange, 'cron', day_of_week='*', hour='*', minute='5-59/20')
 
