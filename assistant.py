@@ -289,27 +289,27 @@ def duties_sync_from_exchange():
             old_msg, new_msg = ex_duty(cal_start, cal_end)
             msg += old_msg
 
-            dl["duty_date"] = duty_date
+            # dl["duty_date"] = duty_date
 
-            for i in range(0, len(re.findall('-', msg))):
+            # for i in range(0, len(re.findall('-', msg))):
 
-            for area in duty_areas:
-                dl["area"] = re.findall(area+".*-", new_msg)
-            if dl["area"]:
+            # for area in duty_areas:
+            #     dl["area"] = re.findall(area+".*-", new_msg)
+            # if dl["area"]:
 
-                dl["full_name"] = msg[:re.search(dl["area"]+" ")]
+            #     dl["full_name"] = msg[:re.search(dl["area"]+" ")]
 
-            else:
-                dl["area"] = new_msg
+            # else:
+            #     dl["area"] = new_msg
 
             logger.info('I find duty for %s %s', str(duty_date), msg)
             request_write_aerospike(item='duty',
                                     bins={str(duty_date): msg},
                                     aerospike_set='duty_admin')
             logger.info('Mysql: trying to save dutylist to DutyList table')
-            mysql = MysqlPool()
+            # mysql = MysqlPool()
 
-            mysql.set_dutylist(duty_date, '','','')
+            # mysql.set_dutylist(duty_date, '','','')
 
     except Exception:
         logger.exception('exception in duties_sync_from_exchange')
