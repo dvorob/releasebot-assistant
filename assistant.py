@@ -364,7 +364,7 @@ def ex_duty(d_start, d_end):
         else:
             result += '\n- %s' % admin_on_duty
 
-        duty_list.add(admin_on_duty)
+        duty_list.append(admin_on_duty)
 
     logger.debug('Информация о дежурных %s %s', result, admin_on_duty)
     return result, admin_on_duty
@@ -637,7 +637,7 @@ if __name__ == "__main__":
     scheduler.add_job(lambda: call_who_is_next(jira_connect),
                       'interval', minutes=1, max_instances=1)
 
-    scheduler.add_job(sync_users_from_ad, 'cron', day_of_week='*', hour='*', minute='*/30')
+    scheduler.add_job(sync_users_from_ad, 'cron', day_of_week='*', hour='*', minute='*/10')
     # Поскольку в 10:00 в календаре присутствует двое дежурных - за вчера и за сегодня, процедура запускается в 5, 25 и 45 минут, чтобы не натыкаться на дубли и не вычищать их
     scheduler.add_job(duties_sync_from_exchange, 'cron', day_of_week='*', hour='*', minute='5-59/20')
 
