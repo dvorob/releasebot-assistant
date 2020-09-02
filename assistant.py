@@ -217,7 +217,7 @@ def calculate_statistics(jira_con):
         logger.info('No, today is a holiday, I don\'t want to count statistics')
 
 
-def get_dismissed_users(self):
+def get_dismissed_users():
     logger.info('start get dismissed users')
     try:
         mysql = MysqlPool()
