@@ -77,6 +77,7 @@ class MysqlPool:
         finally:
             self.db.close()
 
+
     def set_dutylist(self, duty_date, area, full_name, account_name):
         try:
             self.db.connect()
@@ -89,6 +90,26 @@ class MysqlPool:
         finally:
             self.db.close()
 
+
+    def db_get_users(self, field, value) -> list:
+        # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
+        # например, найти Воробьева можно запросом db_get_users('account_name', 'ymvorobevda')
+        # всех админов - запросом db_get_users('admin', 1)
+        logger.info('db_get_users param1 param2 %s %s', field, value)
+        result = []
+        try:
+            self.db.connect()
+            db_users = Users.select().where(getattr(Users, field) == value)
+            for v in db_users:
+                result.append((vars(v))['__data__'])
+            return result
+        except Exception:
+            logger.exception('exception in db get users')
+            return result
+        finally:
+            self.db.close()
+
+
 def statistics_json(jira_con):
     """
         Considers statistics, format in json
@@ -96,7 +117,6 @@ def statistics_json(jira_con):
         :param jira_con: parameters jira connection
         :return: nothing
     """
-
     today = datetime.today().strftime("%Y-%m-%d")
     returned = jira_con.search_issues(config.jira_filter_returned, maxResults=1000)
     resolved = jira_con.search_issues(config.jira_resolved_today, maxResults=1000)
@@ -164,6 +184,7 @@ def request_telegram_send(telegram_message: dict) -> bool:
     except Exception:
         logger.exception('request_telegram_send')
 
+
 def calculate_statistics(jira_con):
     """
         Considers statistics, format in human readable format
@@ -194,6 +215,33 @@ def calculate_statistics(jira_con):
                     config.those_who_need_send_statistics.keys())
     else:
         logger.info('No, today is a holiday, I don\'t want to count statistics')
+
+
+def get_dismissed_users(self):
+    try:
+        mysql = MysqlPool()
+        server = Server(ad_host)
+        conn = Connection(server,user=config.ex_user,password=config.ex_pass)
+        conn.bind()
+        td = datetime.today() - timedelta(1)
+        db_query = Users.select().where(
+            (Users.date_update.is_null() | Users.date_update < td) & Users.working_status == 'working')
+
+        for v in db_query:
+            db_users.append((vars(v))['__data__'])
+
+        for v in db_users:
+            conn.search(config.base_dn,'(&(objectCategory=person)(objectClass=user)(sAMAccountName='+v["account_name"]+'))',SUBTREE,attributes=config.ldap_attrs)
+            for entry in conn.entries:
+                if re.search("Уволенные", str(entry.distinguishedName)):
+                    mysql.set_users(v['account_name'], full_name=None, tg_login=None, working_status='dismissed', tg_id=None, notification=None, email=None)
+                else:
+                    logger.info('get dismissed found that %s is still working', v["account_name"])
+    except Exception as e:
+        logger.exception('exception in db_get_users', str(e))
+    finally:
+        self.db.close()
+
 
 def get_duty_info(after_days=None):
     """
@@ -603,7 +651,6 @@ def sync_users_from_ad():
                 working_status = 'working'
             users_dict [str(entry.sAMAccountName)] ['working_status'] = working_status
             users_dict [str(entry.sAMAccountName)] ['date_update'] = datetime.now()
-
         mysql = MysqlPool()
 
     try:
@@ -640,8 +687,7 @@ if __name__ == "__main__":
     scheduler.add_job(get_duty_info, 'cron', day_of_week='*', hour=10, minute=1)
 
     # Who is next?
-    scheduler.add_job(lambda: call_who_is_next(jira_connect),
-                      'interval', minutes=1, max_instances=1)
+    scheduler.add_job(lambda: call_who_is_next(jira_connect), 'interval', minutes=1, max_instances=1)
 
     scheduler.add_job(sync_users_from_ad, 'cron', day_of_week='*', hour='*', minute='*/5')
     # Поскольку в 10:00 в календаре присутствует двое дежурных - за вчера и за сегодня, процедура запускается в 5, 25 и 45 минут, чтобы не натыкаться на дубли и не вычищать их
