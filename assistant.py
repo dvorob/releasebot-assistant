@@ -604,11 +604,13 @@ def sync_users_from_ad():
 
         mysql = MysqlPool()
 
-    logger.info(users_dict)
-    for k, v in users_dict.items():
-        logger.info('Sync users from ad users_dict %s', v)
-        mysql.set_users(v['account_name'], v['full_name'], v['tg_login'], v['working_status'], v['email'], v['date_update'])
-    logger.info('Mysql: Users saving is completed')
+    try:
+        for k, v in users_dict.items():
+            logger.info('Sync users from ad users_dict %s', v)
+            mysql.set_users(v['account_name'], v['full_name'], v['tg_login'], v['working_status'], v['email'], v['date_update'])
+        logger.info('Mysql: Users saving is completed')
+    except Exception as e:
+        logger.exception('exception in sync users from ad %s', str(e))
 
 
 if __name__ == "__main__":
