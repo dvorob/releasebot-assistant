@@ -61,7 +61,7 @@ class MysqlPool:
     def __init__(self):
         self.db = config_mysql
 
-    await def set_users(self, account_name, full_name, tg_login, working_status, email, date_update):
+    async def set_users(self, account_name, full_name, tg_login, working_status, email, date_update):
         try:
             self.db.connect()
             db_users, _ = Users.get_or_create(account_name=account_name)
