@@ -48,12 +48,20 @@ class Users(BaseModel):
     email = CharField()
     notification = CharField(default='none')
     admin = IntegerField(default=0)
+    date_update = DateTimeField()
+
+class DutyList(BaseModel):
+    date_duty = DateField(index=True)
+    area = CharField()
+    full_name = CharField()
+    account_name = CharField()
+    full_text = CharField()
 
 class MysqlPool:
     def __init__(self):
         self.db = config_mysql
 
-    def db_set_users(self, account_name, full_name, tg_login, working_status, email):
+    def set_users(self, account_name, full_name, tg_login, working_status, email, date_update):
         try:
             self.db.connect()
             db_users, _ = Users.get_or_create(account_name=account_name)
@@ -61,12 +69,24 @@ class MysqlPool:
             db_users.tg_login = tg_login
             db_users.working_status = working_status
             db_users.email = email
+            db_users.date_update = date_update
             db_users.save()
-        except Exception:
-            print('exception in db_set_users')
+        except Exception as e:
+            logger.exception('exception in set_users %s', str(e))
         finally:
             self.db.close()
 
+    def set_dutylist(self, duty_date, area, full_name, account_name):
+        try:
+            self.db.connect()
+            db_duty, _ = DutyList.get_or_create(duty_date=duty_date, area=area)
+            db_duty.full_name = full_name
+            db_duty.account_name = account_name
+            db_duty.save()
+        except Exception as e:
+            logger.exception('error in set dutylist %s', str(e))
+        finally:
+            self.db.close()
 
 def statistics_json(jira_con):
     """
@@ -143,7 +163,6 @@ def request_telegram_send(telegram_message: dict) -> bool:
     except Exception:
         logger.exception('request_telegram_send')
 
-
 def calculate_statistics(jira_con):
     """
         Considers statistics, format in human readable format
@@ -175,35 +194,6 @@ def calculate_statistics(jira_con):
     else:
         logger.info('No, today is a holiday, I don\'t want to count statistics')
 
-
-def fill_duty_info_from_exchange(after_days=None):
-    """
-        Go to Exchange to AdminsOnDuty Calendar
-        Get the Info about dutymen
-        Fill aerospike DB
-    """
-    try:
-        logger.info('fill_duty_info_from_exchange started!')
-
-        msg = 'Дежурят сейчас:\n'
-        delta = 0 if not after_days else int(after_days) * 24 * 60
-
-        cal_start = UTC_NOW() + timedelta(minutes=delta)
-        cal_end = UTC_NOW() + timedelta(minutes=delta + 1)
-
-        # go to exchange for knowledge
-        msg += ex_duty(cal_start, cal_end)
-
-        logger.info('I find duty\n%s', msg)
-        # Запишем всех найденных дежурных на сегодня в aerospike, чтобы
-        # ручка /id дергала не exchange, а aerospike
-        if not after_days:
-            request_write_aerospike(item='duty',
-                                    bins={str(datetime.today().strftime("%Y-%m-%d")): msg},
-                                    aerospike_set='duty_admin')
-    except Exception:
-        logger.exception('exception in fill_duty_info_from_exchange')
-
 def get_duty_info(after_days=None):
     """
         Find out information about duty admin and send them
@@ -221,7 +211,8 @@ def get_duty_info(after_days=None):
         cal_end = UTC_NOW() + timedelta(minutes=delta + 1)
 
         # go to exchange for knowledge
-        msg += ex_duty(cal_start, cal_end)
+        old_msg, new_msg = ex_duty(cal_start, cal_end)
+        msg += old_msg
 
         logger.info('I find duty\n%s', msg)
 
@@ -281,11 +272,11 @@ def duties_sync_from_exchange():
     """
     try:
         logger.info('get_duty_info started!')
-
+        duty_areas = ['ADMSYS', 'NOC', 'ADMWIN', 'IPTEL', 'ADMMSSQL', 'PROCESS', 'DEVOPS', 'TECH', 'INFOSEC']
         # Go to Exchange calendar and get duites for 7 next days
         for i in range(0, 7):
-
-            msg = 'Дежурят сейчас:\n'
+            dl = {}
+            msg = 'Дежурят сейчас:\n'   
             # Вычисляем правильный день для дежурств, с учетом наших 10-часовых особенностей
             if int(datetime.today().strftime("%H")) < int(10):
                 duty_date = (datetime.today() + timedelta(i) - timedelta(1)).strftime("%Y-%m-%d")
@@ -295,12 +286,31 @@ def duties_sync_from_exchange():
             cal_end = UTC_NOW() + timedelta(i)
 
             # go to exchange for knowledge
-            msg += ex_duty(cal_start, cal_end)
+            old_msg, new_msg = ex_duty(cal_start, cal_end)
+            msg += old_msg
+
+            # dl["duty_date"] = duty_date
+
+            # for i in range(0, len(re.findall('-', msg))):
+
+            # for area in duty_areas:
+            #     dl["area"] = re.findall(area+".*-", new_msg)
+            # if dl["area"]:
+
+            #     dl["full_name"] = msg[:re.search(dl["area"]+" ")]
+
+            # else:
+            #     dl["area"] = new_msg
 
             logger.info('I find duty for %s %s', str(duty_date), msg)
             request_write_aerospike(item='duty',
                                     bins={str(duty_date): msg},
                                     aerospike_set='duty_admin')
+            logger.info('Mysql: trying to save dutylist to DutyList table')
+            # mysql = MysqlPool()
+
+            # mysql.set_dutylist(duty_date, '','','')
+
     except Exception:
         logger.exception('exception in duties_sync_from_exchange')
 
@@ -343,19 +353,21 @@ def ex_duty(d_start, d_end):
     ex_acc = ex_connect()
 
     result = ''
-
+    duty_list = []
     for msg in ex_acc.calendar.view(start=d_start, end=d_end) \
             .only('start', 'end', 'subject') \
             .order_by('start', 'end', 'subject'):
         admin_on_duty = msg.subject[:150]
 
         if result == '':
-            result = '- %s' % admin_on_duty
+            result = '- %s' % admin_on_duty #- ADMSYS(биллинг)-Никита Спиридонов
         else:
             result += '\n- %s' % admin_on_duty
 
-    logger.debug('Информация о дежурных %s', result)
-    return result
+        duty_list.add(admin_on_duty)
+
+    logger.debug('Информация о дежурных %s %s', result, admin_on_duty)
+    return result, admin_on_duty
 
 
 def app_version(full_name_app):
@@ -558,11 +570,11 @@ def weekend_duty():
     logger.info('def weekend_duty successfully finished')
 
 
-def get_ad_users():
+def sync_users_from_ad():
     """
         Сходить в AD, забрать логины, tg-логины, рабочий статус с преобразованием в (working, dismissed)
     """
-    logger.info('get_ad_users started')
+    logger.info('sync users from ad started')
     try:
         users_dict = {}
         server = Server(config.ad_host)
@@ -587,12 +599,13 @@ def get_ad_users():
             else:
                 working_status = 'working'
             users_dict [str(entry.sAMAccountName)] ['working_status'] = working_status
-    
+            users_dict [str(entry.sAMAccountName)] ['date_update'] = datetime.now()
+
     logger.info('Mysql: trying to save users to Users table')
     mysql = MysqlPool()
 
     for k, v in users_dict.items():
-        mysql.db_set_users(v['account_name'], v['full_name'], v['tg_login'], v['working_status'], v['email'])
+        mysql.set_users(v['account_name'], v['full_name'], v['tg_login'], v['working_status'], v['email'], v['date_update'])
     logger.info('Mysql: Users saving is completed')
 
 
@@ -624,7 +637,7 @@ if __name__ == "__main__":
     scheduler.add_job(lambda: call_who_is_next(jira_connect),
                       'interval', minutes=1, max_instances=1)
 
-    scheduler.add_job(get_ad_users, 'cron', day_of_week='*', hour='*', minute='*/30')
+    scheduler.add_job(sync_users_from_ad, 'cron', day_of_week='*', hour='*', minute='*/30')
     # Поскольку в 10:00 в календаре присутствует двое дежурных - за вчера и за сегодня, процедура запускается в 5, 25 и 45 минут, чтобы не натыкаться на дубли и не вычищать их
     scheduler.add_job(duties_sync_from_exchange, 'cron', day_of_week='*', hour='*', minute='5-59/20')
 
