@@ -585,8 +585,9 @@ def sync_users_from_ad():
         logger.exception('exception in get_ad_users')
 
     for entry in conn.entries:
-        logger.info('Sync users from ad entry %s', entry)
+        logger.debug('Sync users from ad entry %s', entry)
         if not re.search("(?i)OU=_Служебные", str(entry.distinguishedName)): # Убрать служебные учетки
+            logger.info(entry)
             users_dict [str(entry.sAMAccountName)] = {}
             users_dict [str(entry.sAMAccountName)] ['account_name'] = str(entry.sAMAccountName)
             users_dict [str(entry.sAMAccountName)] ['full_name'] = str(entry.cn)
