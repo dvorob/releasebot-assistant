@@ -585,6 +585,7 @@ def sync_users_from_ad():
         logger.exception('exception in get_ad_users')
 
     for entry in conn.entries:
+        logger.info('Sync users from ad entry %s', entry)
         if not re.search("(?i)OU=_Служебные", str(entry.distinguishedName)): # Убрать служебные учетки
             users_dict [str(entry.sAMAccountName)] = {}
             users_dict [str(entry.sAMAccountName)] ['account_name'] = str(entry.sAMAccountName)
@@ -605,6 +606,7 @@ def sync_users_from_ad():
     mysql = MysqlPool()
 
     for k, v in users_dict.items():
+        logger.info('Sync users from ad users_dict %s', v)
         mysql.set_users(v['account_name'], v['full_name'], v['tg_login'], v['working_status'], v['email'], v['date_update'])
     logger.info('Mysql: Users saving is completed')
 
