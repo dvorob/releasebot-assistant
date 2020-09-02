@@ -221,7 +221,7 @@ def get_dismissed_users():
     logger.info('start get dismissed users')
     try:
         mysql = MysqlPool()
-        server = Server(ad_host)
+        server = Server(config.ad_host)
         conn = Connection(server,user=config.ex_user,password=config.ex_pass)
         conn.bind()
         db_users = []
