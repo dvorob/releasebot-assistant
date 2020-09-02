@@ -66,7 +66,7 @@ class MysqlPool:
         # Записать пользователя в таблицу Users. Переберет параметры и запишет только те из них, что заданы. 
         # Иными словами, если вычитали пользователя из AD с полным набором полей, запись будет создана, поля заполнены.
         # Если передадим tg_id для существующего пользователя, заполнится только это поле
-        logger.info('set users started for %s %s %s %s %s ', account_name, full_name, tg_login, working_status, email, date_update)
+        logger.info('set users started for %s ', account_name)
         try:
             self.db.connect()
             db_users, _ = Users.get_or_create(account_name=account_name)
