@@ -587,7 +587,6 @@ def sync_users_from_ad():
     for entry in conn.entries:
         logger.debug('Sync users from ad entry %s', entry)
         if not re.search("(?i)OU=_Служебные", str(entry.distinguishedName)): # Убрать служебные учетки
-            logger.info(entry)
             users_dict [str(entry.sAMAccountName)] = {}
             users_dict [str(entry.sAMAccountName)] ['account_name'] = str(entry.sAMAccountName)
             users_dict [str(entry.sAMAccountName)] ['full_name'] = str(entry.cn)
@@ -603,13 +602,12 @@ def sync_users_from_ad():
             users_dict [str(entry.sAMAccountName)] ['working_status'] = working_status
             users_dict [str(entry.sAMAccountName)] ['date_update'] = datetime.now()
 
-    logger.info('Mysql: trying to save users to Users table')
-    mysql = MysqlPool()
+        mysql = MysqlPool()
 
-    for k, v in users_dict.items():
-        logger.info('Sync users from ad users_dict %s', v)
-        mysql.set_users(v['account_name'], v['full_name'], v['tg_login'], v['working_status'], v['email'], v['date_update'])
-    logger.info('Mysql: Users saving is completed')
+        for k, v in users_dict.items():
+            logger.info('Sync users from ad users_dict %s', v)
+            mysql.set_users(v['account_name'], v['full_name'], v['tg_login'], v['working_status'], v['email'], v['date_update'])
+        logger.info('Mysql: Users saving is completed')
 
 
 if __name__ == "__main__":
@@ -640,7 +638,7 @@ if __name__ == "__main__":
     scheduler.add_job(lambda: call_who_is_next(jira_connect),
                       'interval', minutes=1, max_instances=1)
 
-    scheduler.add_job(sync_users_from_ad, 'cron', day_of_week='*', hour='*', minute='*/10')
+    scheduler.add_job(sync_users_from_ad, 'cron', day_of_week='*', hour='*', minute='*/5')
     # Поскольку в 10:00 в календаре присутствует двое дежурных - за вчера и за сегодня, процедура запускается в 5, 25 и 45 минут, чтобы не натыкаться на дубли и не вычищать их
     scheduler.add_job(duties_sync_from_exchange, 'cron', day_of_week='*', hour='*', minute='5-59/20')
 
