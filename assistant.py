@@ -125,6 +125,29 @@ class MysqlPool:
             self.db.close()
 
 
+   def get_user_by_fullname(self, value) -> list:
+        # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
+        # например, найти Воробьева можно запросом db_get_users('account_name', 'ymvorobevda')
+        # всех админов - запросом db_get_users('admin', 1)
+        result = []
+        try:
+            self.db.connect(reuse_if_open=True)
+            full_name = re.split(' ', value)
+            if len(full_name) > 1:
+                db_users = Users.select().where(Users.full_name.startswith(full_name[0]) & Users.full_name.endswith(full_name[1]))
+            elif len(full_name) == 1:
+                db_users = Users.select().where(Users.full_name.endswith(full_name[0]))
+            else:
+                db_users = ['Nobody']
+            for v in db_users:
+                result.append((vars(v))['__data__'])
+            return result
+        except Exception:
+            return result
+        finally:
+            self.db.close()
+
+
 def statistics_json(jira_con):
     """
         Considers statistics, format in json
@@ -374,6 +397,9 @@ def duties_sync_from_exchange():
                     if "area" in dl:
                         if len(re.findall(area+'.*-', msg)) > 0:
                             dl["full_name"] = re.sub(r'^ ', '', msg[re.search(area+".*-", msg).end():])
+                            search_duty_name = mysql.get_user_by_fullname(dl["full_name"])
+                            if search_duty_name:
+                                dl["account_name"] = search_duty_name[0]["account_name"]
                     logger.info(dl)
                 mysql.set_dutylist(dl)
 
@@ -710,11 +736,9 @@ if __name__ == "__main__":
     # Поскольку в 10:00 в календаре присутствует двое дежурных - за вчера и за сегодня, процедура запускается в 5, 25 и 45 минут, чтобы не натыкаться на дубли и не вычищать их
     scheduler.add_job(duties_sync_from_exchange, 'cron', day_of_week='*', hour='*', minute='*/5')
 
-    scheduler.add_job(notify_duties, 'cron', day_of_week='*', hour='*', minute='*')
+    #scheduler.add_job(notify_duties, 'cron', day_of_week='*', hour='*', minute='*')
 
     scheduler.add_job(weekend_duty, 'cron', day_of_week='fri', hour=14, minute=1)
-
-    # scheduler.add_job(notify_today_duties, 'cron', day_of_week='*', hour=9, minute=31)
 
     # Запускаем расписание
     scheduler.start()
