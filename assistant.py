@@ -89,7 +89,7 @@ class MysqlPool:
     def set_dutylist(self, dl):
         try:
             self.db.connect(reuse_if_open=True)
-            db_duty, _ = DutyList.get_or_create(duty_date=dl['duty_date'], area=dl['area'])
+            db_duty, _ = Duty_List.get_or_create(duty_date=dl['duty_date'], area=dl['area'])
             db_duty.full_name = dl['full_name']
             db_duty.account_name = dl['account_name']
             db_duty.full_text = dl['full_text']
