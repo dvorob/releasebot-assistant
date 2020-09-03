@@ -374,7 +374,7 @@ def duties_sync_from_exchange():
                     if "area" in dl:
                         if len(re.findall(area+'.*-', msg)) > 0:
                             dl["full_name"] = re.sub(r'^ ', '', msg[re.search(area+".*-", msg).end():])
-
+                    logger.info(dl)
                 mysql.set_dutylist(dl)
 
     except Exception:
@@ -431,7 +431,7 @@ def ex_duty(d_start, d_end):
         duty_list.append(admin_on_duty)
 
     logger.debug('Информация о дежурных %s %s', result, admin_on_duty)
-    return result, admin_on_duty
+    return result, duty_list
 
 
 def app_version(full_name_app):
