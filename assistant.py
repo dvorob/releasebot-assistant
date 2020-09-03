@@ -86,12 +86,13 @@ class MysqlPool:
             self.db.close()
 
 
-    def set_dutylist(self, duty_date, area, full_name, account_name):
+    def set_dutylist(self, dl):
         try:
             self.db.connect(reuse_if_open=True)
-            db_duty, _ = DutyList.get_or_create(duty_date=duty_date, area=area)
-            db_duty.full_name = full_name
-            db_duty.account_name = account_name
+            db_duty, _ = DutyList.get_or_create(duty_date=dl['duty_date'], area=dl['area'])
+            db_duty.full_name = dl['full_name']
+            db_duty.account_name = dl['account_name']
+            db_duty.full_text = dl['full_text']
             db_duty.save()
         except Exception as e:
             logger.exception('error in set dutylist %s', str(e))
@@ -99,7 +100,7 @@ class MysqlPool:
             self.db.close()
 
 
-    def db_get_users(self, field, value) -> list:
+    def get_users(self, field, value) -> list:
         # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
         # например, найти Воробьева можно запросом db_get_users('account_name', 'ymvorobevda')
         # всех админов - запросом db_get_users('admin', 1)
@@ -253,7 +254,7 @@ def get_dismissed_users():
                 else:
                     logger.info('get dismissed found that %s is still working', v["account_name"])
     except Exception as e:
-        logger.exception('exception in db_get_users', str(e))
+        logger.exception('exception in get_users', str(e))
     finally:
         self.db.close()
 
@@ -336,16 +337,15 @@ def duties_sync_from_exchange():
     """
     try:
         logger.info('get_duty_info started!')
-        duty_areas = ['ADMSYS', 'NOC', 'ADMWIN', 'IPTEL', 'ADMMSSQL', 'PROCESS', 'DEVOPS', 'TECH', 'INFOSEC']
+        duty_areas = ['ADMSYS', 'NOC', 'ADMWIN', 'IPTEL', 'ADMMSSQL', 'PROCESS', 'DEVOPS', 'TECH', 'INFOSEC', 'ora', 'pg']
         # Go to Exchange calendar and get duites for 7 next days
         for i in range(0, 7):
-            dl = {}
             msg = 'Дежурят сейчас:\n'   
             # Вычисляем правильный день для дежурств, с учетом наших 10-часовых особенностей
             if int(datetime.today().strftime("%H")) < int(10):
-                duty_date = (datetime.today() + timedelta(i) - timedelta(1)).strftime("%Y-%m-%d")
+                duty_date = datetime.today() + timedelta(i) - timedelta(1)
             else:
-                duty_date = (datetime.today() + timedelta(i)).strftime("%Y-%m-%d") 
+                duty_date = datetime.today() + timedelta(i)
             cal_start = UTC_NOW() + timedelta(i)
             cal_end = UTC_NOW() + timedelta(i)
 
@@ -353,27 +353,25 @@ def duties_sync_from_exchange():
             old_msg, new_msg = ex_duty(cal_start, cal_end)
             msg += old_msg
 
-            # dl["duty_date"] = duty_date
-
-            # for i in range(0, len(re.findall('-', msg))):
-
-            # for area in duty_areas:
-            #     dl["area"] = re.findall(area+".*-", new_msg)
-            # if dl["area"]:
-
-            #     dl["full_name"] = msg[:re.search(dl["area"]+" ")]
-
-            # else:
-            #     dl["area"] = new_msg
-
-            logger.info('I find duty for %s %s', str(duty_date), msg)
+            logger.info('I find duty for %s %s', duty_date.strftime("%Y-%m-%d"), msg)
             request_write_aerospike(item='duty',
-                                    bins={str(duty_date): msg},
+                                    bins={duty_date.strftime("%Y-%m-%d"): msg},
                                     aerospike_set='duty_admin')
             logger.info('Mysql: trying to save dutylist to DutyList table')
-            # mysql = MysqlPool()
 
-            # mysql.set_dutylist(duty_date, '','','')
+            # Разобрать сообщение из календаря в формат ["area (зона ответственности)", "имя дежурного", "аккаунт деужурного"]
+            duty_list = []
+            for msg in new_msg:
+                dl = {'duty_date': duty_date, 'full_text': msg, 'area' : '', 'full_name': '', 'account_name': ''}
+                for area in duty_areas:
+                    if len(re.findall(area+".*-", msg)) > 0:
+                        dl["area"] = re.sub(r' |-', '', (re.findall(area+'.*-', msg))[0])
+
+                    if "area" in dl:
+                        if len(re.findall(area+'.*-', msg)) > 0:
+                            dl["full_name"] = re.sub(r'^ ', '', msg[re.search(area+".*-", msg).end():])
+
+                set_dutylist(dl)
 
     except Exception:
         logger.exception('exception in duties_sync_from_exchange')
