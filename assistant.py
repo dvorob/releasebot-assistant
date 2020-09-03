@@ -52,6 +52,7 @@ class Users(BaseModel):
     date_update = DateTimeField()
 
 class Duty_List(BaseModel):
+    id = IntegerField()
     duty_date = DateField(index=True)
     area = CharField()
     full_name = CharField()
