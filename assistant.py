@@ -62,15 +62,13 @@ class MysqlPool:
     def __init__(self):
         self.db = config_mysql
 
-    def set_users(self, account_name, full_name, tg_login, working_status, email, date_update):
+    def set_users(self, account_name, full_name, tg_login, working_status, email):
         # Записать пользователя в таблицу Users. Переберет параметры и запишет только те из них, что заданы. 
         # Иными словами, если вычитали пользователя из AD с полным набором полей, запись будет создана, поля заполнены.
         # Если передадим tg_id для существующего пользователя, заполнится только это поле
         logger.info('set users started for %s ', account_name)
         try:
-            if not self.db.is_closed():
-                self.db.close()
-            self.db.connect()
+            self.db.connect(reuse_if_open=True)
             db_users, _ = Users.get_or_create(account_name=account_name)
             if full_name:
                 db_users.full_name = full_name
@@ -81,7 +79,7 @@ class MysqlPool:
             if email:
                 db_users.email = email
             if date_update:
-                db_users.email = date_update
+                db_users.date_update = datetime.now()
             db_users.save()
         except Exception as e:
             logger.exception('exception in set_users %s', str(e))
@@ -91,7 +89,7 @@ class MysqlPool:
 
     def set_dutylist(self, duty_date, area, full_name, account_name):
         try:
-            self.db.connect()
+            self.db.connect(reuse_if_open=True)
             db_duty, _ = DutyList.get_or_create(duty_date=duty_date, area=area)
             db_duty.full_name = full_name
             db_duty.account_name = account_name
@@ -109,7 +107,7 @@ class MysqlPool:
         logger.info('db_get_users param1 param2 %s %s', field, value)
         result = []
         try:
-            self.db.connect()
+            self.db.connect(reuse_if_open=True)
             db_users = Users.select().where(getattr(Users, field) == value)
             for v in db_users:
                 result.append((vars(v))['__data__'])
@@ -252,7 +250,7 @@ def get_dismissed_users():
             for entry in conn.entries:
                 if re.search("Уволенные", str(entry.distinguishedName)):
                     logger.info('%s was dismissed', v['account_name'])
-                    mysql.set_users(v['account_name'], full_name=None, tg_login=None, working_status='dismissed', email=None, date_update=None)
+                    mysql.set_users(v['account_name'], full_name=None, tg_login=None, working_status='dismissed', email=None)
                 else:
                     logger.info('get dismissed found that %s is still working', v["account_name"])
     except Exception as e:
@@ -668,13 +666,12 @@ def sync_users_from_ad():
             else:
                 working_status = 'working'
             users_dict [str(entry.sAMAccountName)] ['working_status'] = working_status
-            users_dict [str(entry.sAMAccountName)] ['date_update'] = datetime.now()
         mysql = MysqlPool()
 
     try:
         for k, v in users_dict.items():
             logger.info('Sync users from ad users_dict %s', v)
-            mysql.set_users(v['account_name'], v['full_name'], v['tg_login'], v['working_status'], v['email'], v['date_update'])
+            mysql.set_users(v['account_name'], v['full_name'], v['tg_login'], v['working_status'], v['email'])
         logger.info('Mysql: Users saving is completed')
     except Exception as e:
         logger.exception('exception in sync users from ad %s', str(e))
@@ -707,8 +704,8 @@ if __name__ == "__main__":
     # Who is next?
     scheduler.add_job(lambda: call_who_is_next(jira_connect), 'interval', minutes=1, max_instances=1)
 
-    # Проверка, не уволились ли сотрудники. Запускается раз в сутки
-    scheduler.add_job(get_dismissed_users, 'cron', day_of_week='*', hour='*', minute='*/2')
+    # Проверка, не уволились ли сотрудники. Запускается раз в час
+    scheduler.add_job(get_dismissed_users, 'cron', day_of_week='*', hour='*', minute='45')
 
     scheduler.add_job(sync_users_from_ad, 'cron', day_of_week='*', hour='*', minute='30')
     # Поскольку в 10:00 в календаре присутствует двое дежурных - за вчера и за сегодня, процедура запускается в 5, 25 и 45 минут, чтобы не натыкаться на дубли и не вычищать их
