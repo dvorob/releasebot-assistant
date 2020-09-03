@@ -52,7 +52,7 @@ class Users(BaseModel):
     date_update = DateTimeField()
 
 class DutyList(BaseModel):
-    date_duty = DateField(index=True)
+    duty_date = DateField(index=True)
     area = CharField()
     full_name = CharField()
     account_name = CharField()
@@ -111,7 +111,7 @@ class MysqlPool:
             if operation == 'equal':
                 db_users = Users.select().where(getattr(Users, field) == value)
             elif operation == 'like':
-                db_users = Users.select().where(getattr(Users, field) == value)
+                db_users = Users.select().where(getattr(Users, field) % value)
             else:
                 db_users = []
             for v in db_users:
@@ -386,15 +386,13 @@ def notify_duties(duty_date):
         Нотификация дежурным утром
     """
     dutymen = get_users('notification', 'duty', 'like')
-    logger.info('today duties to notify %s', duties_chat_id)
+    logger.info('today duties to notify %s %s', dutymen, duty_date)
 
-    today = datetime.today().strftime("%Y-%m-%d")
-
-    for chat_id in duties_chat_id[today]:
-        msg = 'Крепись, ты сегодня дежуришь.'
-        telegram_message = {'chat_id': [chat_id], 'text': msg}
-        request_telegram_send(telegram_message)
-        logger.info('I sent today duty notification to %s', chat_id)
+    # for chat_id in duties_chat_id[today]:
+    #     msg = 'Крепись, ты сегодня дежуришь.'
+    #     telegram_message = {'chat_id': [chat_id], 'text': msg}
+    #     request_telegram_send(telegram_message)
+    #     logger.info('I sent today duty notification to %s', chat_id)
 
 
 def ex_connect():
@@ -711,6 +709,8 @@ if __name__ == "__main__":
     scheduler.add_job(sync_users_from_ad, 'cron', day_of_week='*', hour='*', minute='*/5')
     # Поскольку в 10:00 в календаре присутствует двое дежурных - за вчера и за сегодня, процедура запускается в 5, 25 и 45 минут, чтобы не натыкаться на дубли и не вычищать их
     scheduler.add_job(duties_sync_from_exchange, 'cron', day_of_week='*', hour='*', minute='*/5')
+
+    scheduler.add_job(notify_duties, 'cron', day_of_week='*', hour='*', minute='*')
 
     scheduler.add_job(weekend_duty, 'cron', day_of_week='fri', hour=14, minute=1)
 
