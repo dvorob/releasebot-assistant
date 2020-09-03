@@ -705,7 +705,7 @@ if __name__ == "__main__":
     scheduler.add_job(lambda: call_who_is_next(jira_connect), 'interval', minutes=1, max_instances=1)
 
     # Проверка, не уволились ли сотрудники. Запускается раз в час
-    scheduler.add_job(get_dismissed_users, 'cron', day_of_week='*', hour='*', minute='*/5')
+    scheduler.add_job(get_dismissed_users, 'cron', day_of_week='*', hour='*', minute='45')
 
     scheduler.add_job(sync_users_from_ad, 'cron', day_of_week='*', hour='*', minute='30')
     # Поскольку в 10:00 в календаре присутствует двое дежурных - за вчера и за сегодня, процедура запускается в 5, 25 и 45 минут, чтобы не натыкаться на дубли и не вычищать их
