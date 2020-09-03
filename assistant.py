@@ -125,7 +125,7 @@ class MysqlPool:
             self.db.close()
 
 
-   def get_user_by_fullname(self, value) -> list:
+    def get_user_by_fullname(self, value) -> list:
         # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
         # например, найти Воробьева можно запросом db_get_users('account_name', 'ymvorobevda')
         # всех админов - запросом db_get_users('admin', 1)
@@ -142,7 +142,8 @@ class MysqlPool:
             for v in db_users:
                 result.append((vars(v))['__data__'])
             return result
-        except Exception:
+        except Exception as e:
+            logger.exception('exception in get user by fullname %s', str(e))
             return result
         finally:
             self.db.close()
