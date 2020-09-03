@@ -78,8 +78,7 @@ class MysqlPool:
                 db_users.working_status = working_status
             if email:
                 db_users.email = email
-            if date_update:
-                db_users.date_update = datetime.now()
+            db_users.date_update = datetime.now()
             db_users.save()
         except Exception as e:
             logger.exception('exception in set_users %s', str(e))
