@@ -100,7 +100,7 @@ class MysqlPool:
             self.db.close()
 
 
-    def get_users(self, field, value) -> list:
+    def get_users(self, field, value, operation) -> list:
         # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
         # например, найти Воробьева можно запросом db_get_users('account_name', 'ymvorobevda')
         # всех админов - запросом db_get_users('admin', 1)
@@ -108,7 +108,12 @@ class MysqlPool:
         result = []
         try:
             self.db.connect(reuse_if_open=True)
-            db_users = Users.select().where(getattr(Users, field) == value)
+            if operation == 'equal':
+                db_users = Users.select().where(getattr(Users, field) == value)
+            elif operation == 'like':
+                db_users = Users.select().where(getattr(Users, field) == value)
+            else:
+                db_users = []
             for v in db_users:
                 result.append((vars(v))['__data__'])
             return result
@@ -255,8 +260,6 @@ def get_dismissed_users():
                     logger.info('get dismissed found that %s is still working', v["account_name"])
     except Exception as e:
         logger.exception('exception in get_users', str(e))
-    finally:
-        self.db.close()
 
 
 def get_duty_info(after_days=None):
@@ -338,6 +341,7 @@ def duties_sync_from_exchange():
     try:
         logger.info('get_duty_info started!')
         duty_areas = ['ADMSYS', 'NOC', 'ADMWIN', 'IPTEL', 'ADMMSSQL', 'PROCESS', 'DEVOPS', 'TECH', 'INFOSEC', 'ora', 'pg']
+        mysql = MysqlPool()
         # Go to Exchange calendar and get duites for 7 next days
         for i in range(0, 7):
             msg = 'Дежурят сейчас:\n'   
@@ -371,17 +375,17 @@ def duties_sync_from_exchange():
                         if len(re.findall(area+'.*-', msg)) > 0:
                             dl["full_name"] = re.sub(r'^ ', '', msg[re.search(area+".*-", msg).end():])
 
-                set_dutylist(dl)
+                mysql.set_dutylist(dl)
 
     except Exception:
         logger.exception('exception in duties_sync_from_exchange')
 
 
-def notify_today_duties():
+def notify_duties(duty_date):
     """
         Нотификация дежурным утром
     """
-    duties_chat_id = request_read_aerospike(item='today_duty_adm_name', aerospike_set='duty_admin')
+    dutymen = get_users('notification', 'duty', 'like')
     logger.info('today duties to notify %s', duties_chat_id)
 
     today = datetime.today().strftime("%Y-%m-%d")
