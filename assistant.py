@@ -51,7 +51,7 @@ class Users(BaseModel):
     admin = IntegerField(default=0)
     date_update = DateTimeField()
 
-class DutyList(BaseModel):
+class Duty_List(BaseModel):
     duty_date = DateField(index=True)
     area = CharField()
     full_name = CharField()
@@ -234,7 +234,6 @@ def calculate_statistics(jira_con):
 def get_dismissed_users():
     logger.info('start get dismissed users')
     try:
-        mysql = MysqlPool()
         server = Server(config.ad_host)
         conn = Connection(server,user=config.ex_user,password=config.ex_pass)
         conn.bind()
@@ -341,7 +340,7 @@ def duties_sync_from_exchange():
     try:
         logger.info('get_duty_info started!')
         duty_areas = ['ADMSYS', 'NOC', 'ADMWIN', 'IPTEL', 'ADMMSSQL', 'PROCESS', 'DEVOPS', 'TECH', 'INFOSEC', 'ora', 'pg']
-        mysql = MysqlPool()
+
         # Go to Exchange calendar and get duites for 7 next days
         for i in range(0, 7):
             msg = 'Дежурят сейчас:\n'   
@@ -385,7 +384,7 @@ def notify_duties(duty_date=datetime.today()):
     """
         Нотификация дежурным утром
     """
-    dutymen = get_users('notification', 'duty', 'like')
+    dutymen = mysql.get_users('notification', 'duty', 'like')
     logger.info('today duties to notify %s %s', dutymen, duty_date)
 
     # for chat_id in duties_chat_id[today]:
@@ -665,7 +664,6 @@ def sync_users_from_ad():
             else:
                 working_status = 'working'
             users_dict [str(entry.sAMAccountName)] ['working_status'] = working_status
-        mysql = MysqlPool()
 
     try:
         for k, v in users_dict.items():
@@ -682,6 +680,7 @@ if __name__ == "__main__":
         'server': config.jira_host, 'verify': False
     }
     jira_connect = JIRA(options, basic_auth=(config.jira_user, config.jira_pass))
+    mysql = MysqlPool()
 
     # Настраиваем логи
     logging.config.fileConfig('/etc/xerxes/logging_assistant.conf')
