@@ -381,7 +381,7 @@ def duties_sync_from_exchange():
         logger.exception('exception in duties_sync_from_exchange')
 
 
-def notify_duties(duty_date):
+def notify_duties(duty_date=datetime.today()):
     """
         Нотификация дежурным утром
     """
