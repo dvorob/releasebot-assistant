@@ -399,7 +399,7 @@ def duties_sync_from_exchange():
 
                     if "area" in dl:
                         if len(re.findall(area+'.*-', msg)) > 0:
-                            dl["full_name"] = re.sub(r'^ | +$', '', msg[re.search(area+".*-", msg).end():])
+                            dl["full_name"] = re.sub(r'^ | +$ | ', '', msg[re.search(area+".*-", msg).end():])
                             search_duty_name = mysql.get_user_by_fullname(dl["full_name"])
                             if search_duty_name:
                                 dl["account_name"] = search_duty_name[0]["account_name"]
