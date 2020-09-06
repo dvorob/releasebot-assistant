@@ -369,7 +369,7 @@ def duties_sync_from_exchange():
         duty_areas = ['ADMSYS', 'NOC', 'ADMWIN', 'IPTEL', 'ADMMSSQL', 'PROCESS', 'DEVOPS', 'TECH', 'INFOSEC', 'ora', 'pg']
 
         # Go to Exchange calendar and get duites for 7 next days
-        for i in range(0, 7):
+        for i in range(0, 13):
             msg = 'Дежурят сейчас:\n'   
             # Вычисляем правильный день для дежурств, с учетом наших 10-часовых особенностей
             if int(datetime.today().strftime("%H")) < int(10):
@@ -399,7 +399,7 @@ def duties_sync_from_exchange():
 
                     if "area" in dl:
                         if len(re.findall(area+'.*-', msg)) > 0:
-                            dl["full_name"] = re.sub(r'^ ', '', msg[re.search(area+".*-", msg).end():])
+                            dl["full_name"] = re.sub(r'^ | +$', '', msg[re.search(area+".*-", msg).end():])
                             search_duty_name = mysql.get_user_by_fullname(dl["full_name"])
                             if search_duty_name:
                                 dl["account_name"] = search_duty_name[0]["account_name"]
@@ -736,8 +736,7 @@ if __name__ == "__main__":
 
     scheduler.add_job(sync_users_from_ad, 'cron', day_of_week='*', hour='*', minute='*/5')
     # Поскольку в 10:00 в календаре присутствует двое дежурных - за вчера и за сегодня, процедура запускается в 5, 25 и 45 минут, чтобы не натыкаться на дубли и не вычищать их
-    scheduler.add_job(duties_sync_from_exchange, 'cron', day_of_week='*', hour='*', minute='*/5')
-
+    scheduler.add_job(duties_sync_from_exchange, 'cron', day_of_week='*', hour='*', minute='10')
     #scheduler.add_job(notify_duties, 'cron', day_of_week='*', hour='*', minute='*')
 
     scheduler.add_job(weekend_duty, 'cron', day_of_week='fri', hour=14, minute=1)
