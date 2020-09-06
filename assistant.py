@@ -134,7 +134,9 @@ class MysqlPool:
             self.db.connect(reuse_if_open=True)
             full_name = re.split(' ', value)
             if len(full_name) > 1:
-                db_users = Users.select().where(Users.full_name.startswith(full_name[0]) & Users.full_name.endswith(full_name[1]))
+                db_users = Users.select().where(
+                    (Users.full_name.startswith(full_name[0]) & Users.full_name.endswith(full_name[1])) |
+                    (Users.full_name.startswith(full_name[1]) & Users.full_name.endswith(full_name[0])))
             elif len(full_name) == 1:
                 db_users = Users.select().where(Users.full_name.endswith(full_name[0]))
             else:
@@ -692,10 +694,9 @@ def sync_users_from_ad():
             else:
                 working_status = 'working'
             users_dict [str(entry.sAMAccountName)] ['working_status'] = working_status
-
     try:
         for k, v in users_dict.items():
-            logger.info('Sync users from ad users_dict %s', v)
+            logger.debug('Sync users from ad users_dict %s', v)
             mysql.set_users(v['account_name'], v['full_name'], v['tg_login'], v['working_status'], v['email'])
         logger.info('Mysql: Users saving is completed')
     except Exception as e:
