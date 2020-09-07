@@ -96,7 +96,10 @@ class MysqlPool:
             db_duty.account_name = dl['account_name']
             db_duty.full_text = dl['full_text']
             duty_tg = get_users('account_name', dl['account_name'], 'equal')
-            db_duty.tg_login = duty_tg[0]['tg_login'] if len(duty_tg) > 0 else db_duty.tg_login = ''
+            if len(duty_tg) > 0:
+                db_duty.tg_login = duty_tg[0]['tg_login']
+            else:
+                db_duty.tg_login = ''
             db_duty.save()
         except Exception as e:
             logger.exception('error in set dutylist %s', str(e))
