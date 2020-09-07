@@ -95,11 +95,7 @@ class MysqlPool:
             db_duty.full_name = dl['full_name']
             db_duty.account_name = dl['account_name']
             db_duty.full_text = dl['full_text']
-            duty_tg = get_users('account_name', dl['account_name'], 'equal')
-            if len(duty_tg) > 0:
-                db_duty.tg_login = duty_tg[0]['tg_login']
-            else:
-                db_duty.tg_login = ''
+            db_duty.tg_login = dl['tg_login']
             db_duty.save()
         except Exception as e:
             logger.exception('error in set dutylist %s', str(e))
@@ -398,7 +394,7 @@ def duties_sync_from_exchange():
             # Разобрать сообщение из календаря в формат ["area (зона ответственности)", "имя дежурного", "аккаунт деужурного"]
             duty_list = []
             for msg in new_msg:
-                dl = {'duty_date': duty_date, 'full_text': msg, 'area' : '', 'full_name': '', 'account_name': ''}
+                dl = {'duty_date': duty_date, 'full_text': msg, 'area' : '', 'full_name': '', 'account_name': '', 'tg_login': ''}
                 for area in duty_areas:
                     if len(re.findall(area+".*-", msg)) > 0:
                         dl["area"] = re.sub(r' |-', '', (re.findall(area+'.*-', msg))[0])
@@ -409,6 +405,7 @@ def duties_sync_from_exchange():
                             search_duty_name = mysql.get_user_by_fullname(dl["full_name"])
                             if search_duty_name:
                                 dl["account_name"] = search_duty_name[0]["account_name"]
+                                dl["tg_login"] = search_duty_name[0]["tg_login"]
                     logger.info(dl)
                 mysql.set_dutylist(dl)
 
