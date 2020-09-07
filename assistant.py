@@ -58,6 +58,7 @@ class Duty_List(BaseModel):
     full_name = CharField()
     account_name = CharField()
     full_text = CharField()
+    tg_login = CharField()
 
 class MysqlPool:
     def __init__(self):
@@ -94,6 +95,8 @@ class MysqlPool:
             db_duty.full_name = dl['full_name']
             db_duty.account_name = dl['account_name']
             db_duty.full_text = dl['full_text']
+            duty_tg = get_users('account_name', dl['account_name'], 'equal')
+            db_duty.tg_login = duty_tg[0]['tg_login'] if len(duty_tg) > 0 else db_duty.tg_login = ''
             db_duty.save()
         except Exception as e:
             logger.exception('error in set dutylist %s', str(e))
