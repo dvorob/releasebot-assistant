@@ -394,7 +394,6 @@ def duties_sync_from_exchange():
             request_write_aerospike(item='duty',
                                     bins={duty_date.strftime("%Y-%m-%d"): msg},
                                     aerospike_set='duty_admin')
-            logger.info('Mysql: trying to save dutylist to DutyList table')
 
             # Разобрать сообщение из календаря в формат ["area (зона ответственности)", "имя дежурного", "аккаунт деужурного"]
             duty_list = []
@@ -412,7 +411,7 @@ def duties_sync_from_exchange():
                                 if len(search_duty_name) == 1:
                                     dl["account_name"] = search_duty_name[0]["account_name"]
                                     dl["tg_login"] = search_duty_name[0]["tg_login"]
-                logger.info('duty %s',dl)
+                logger.debug('duty %s',dl)
                 mysql.set_dutylist(dl)
 
     except Exception as e:
@@ -745,7 +744,7 @@ if __name__ == "__main__":
 
     scheduler.add_job(sync_users_from_ad, 'cron', day_of_week='*', hour='*', minute='*/5')
     # Поскольку в 10:00 в календаре присутствует двое дежурных - за вчера и за сегодня, процедура запускается в 5, 25 и 45 минут, чтобы не натыкаться на дубли и не вычищать их
-    scheduler.add_job(duties_sync_from_exchange, 'cron', day_of_week='*', hour='*', minute='*/2')
+    scheduler.add_job(duties_sync_from_exchange, 'cron', day_of_week='*', hour='*', minute='5-59/20')
     #scheduler.add_job(notify_duties, 'cron', day_of_week='*', hour='*', minute='*')
 
     scheduler.add_job(weekend_duty, 'cron', day_of_week='fri', hour=14, minute=1)
