@@ -404,13 +404,14 @@ def duties_sync_from_exchange():
                             dl["full_name"] = re.sub(r'^ | +$ | ', '', msg[re.search(area+".*-", msg).end():])
                             search_duty_name = mysql.get_user_by_fullname(dl["full_name"])
                             if search_duty_name:
-                                dl["account_name"] = search_duty_name[0]["account_name"]
-                                dl["tg_login"] = search_duty_name[0]["tg_login"]
+                                if len(search_duty_name) == 1:
+                                    dl["account_name"] = search_duty_name[0]["account_name"]
+                                    dl["tg_login"] = search_duty_name[0]["tg_login"]
                     logger.info(dl)
                 mysql.set_dutylist(dl)
 
-    except Exception:
-        logger.exception('exception in duties_sync_from_exchange')
+    except Exception as e:
+        logger.exception('exception in duties_sync_from_exchange %s', str(e))
 
 
 def notify_duties(duty_date=datetime.today()):
