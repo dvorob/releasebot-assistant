@@ -60,6 +60,11 @@ class Duty_List(BaseModel):
     full_text = CharField()
     tg_login = CharField()
 
+    class Meta:
+        indexes = (
+            (('duty_list', 'area'), True)
+        )
+
 class MysqlPool:
     def __init__(self):
         self.db = config_mysql
@@ -407,7 +412,7 @@ def duties_sync_from_exchange():
                                 if len(search_duty_name) == 1:
                                     dl["account_name"] = search_duty_name[0]["account_name"]
                                     dl["tg_login"] = search_duty_name[0]["tg_login"]
-                    logger.info(dl)
+                logger.info('duty %s',dl)
                 mysql.set_dutylist(dl)
 
     except Exception as e:
@@ -740,7 +745,7 @@ if __name__ == "__main__":
 
     scheduler.add_job(sync_users_from_ad, 'cron', day_of_week='*', hour='*', minute='*/5')
     # Поскольку в 10:00 в календаре присутствует двое дежурных - за вчера и за сегодня, процедура запускается в 5, 25 и 45 минут, чтобы не натыкаться на дубли и не вычищать их
-    scheduler.add_job(duties_sync_from_exchange, 'cron', day_of_week='*', hour='*', minute='5-59/20')
+    scheduler.add_job(duties_sync_from_exchange, 'cron', day_of_week='*', hour='*', minute='*/2')
     #scheduler.add_job(notify_duties, 'cron', day_of_week='*', hour='*', minute='*')
 
     scheduler.add_job(weekend_duty, 'cron', day_of_week='fri', hour=14, minute=1)
