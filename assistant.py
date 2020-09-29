@@ -4,7 +4,7 @@
     Ассистент релизного бота
     запуск джоб по расписанию, статистика и прочее
 """
-
+import json
 import logging.config
 import re
 import warnings
