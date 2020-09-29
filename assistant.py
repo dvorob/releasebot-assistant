@@ -419,7 +419,7 @@ def duty_informing_from_schedule(after_days, area, msg):
 
 def duty_reminder_daily():
     msg = 'Ты сегодня дежуришь'
-    duty_informing_from_schedule(0, area='ADMSYS(empty)', msg)
+    duty_informing_from_schedule(0, 'ADMSYS(empty)', msg)
 
 def weekend_reminder():
     logger.info('remind')
