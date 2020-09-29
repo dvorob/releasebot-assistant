@@ -410,8 +410,8 @@ def duty_informing_from_schedule(after_days, area, msg):
     if len(dutymen_array) > 0:
         for d in dutymen_array:
             try:
-                dutymen = mysql.get_users('account_name', d['account_name'], 'equal')
-                send_message_to_users(chat_id=dutymen[0]['tg_id'], text=msg)
+                logger.info('try to send message to %s %s', d, msg)
+                send_message_to_users([d['account_name']], msg)
             except BotBlocked:
                 logger.info('YM release bot was blocked by %s', d['tg_login'])
             except ChatNotFound:
