@@ -401,7 +401,7 @@ def get_duty_date(date):
     else:
         return date
 
-def duty_informing_from_schedule(after_days=None, area, msg):
+def duty_informing_from_schedule(after_days, area, msg):
     """
         Отправить уведомление дежурным на заданную дату, вычисляемую по отступу от текущей
     """
@@ -419,7 +419,7 @@ def duty_informing_from_schedule(after_days=None, area, msg):
 
 def duty_reminder_daily():
     msg = 'Ты сегодня дежуришь'
-    duty_informing_from_schedule(area='ADMSYS(empty)', msg)
+    duty_informing_from_schedule(0, area='ADMSYS(empty)', msg)
 
 def weekend_reminder():
     logger.info('remind')
