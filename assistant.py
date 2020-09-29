@@ -412,15 +412,16 @@ def duty_informing_from_schedule(after_days, area, msg):
             try:
                 logger.info('try to send message to %s %s', d, msg)
                 send_message_to_users([d['account_name']], msg)
+                send_message_to_users(['ymvorobevda'], 'Отправил дежурному сообщение '+d['tg_login'])
             except BotBlocked:
                 logger.info('YM release bot was blocked by %s', d['tg_login'])
             except ChatNotFound:
                 logger.error('Chat not found with: %s', d['tg_login'])
 
 def duty_reminder_daily():
-    msg = 'Крепись. Ты сегодня дежуришь.'
-    duty_informing_from_schedule(0, 'ADMSYS(empty)', msg)
-
+    msg = 'Крепись. Ты сегодня дежуришь. Если получил сообщение, напиши @dvorob =)'
+    duty_informing_from_schedule(1, 'ADMSYS(портал)', msg)
+    duty_informing_from_schedule(1, 'ADMSYS(биллинг)', msg)
 
 def weekend_reminder():
     logger.info('remind')
@@ -795,8 +796,7 @@ if __name__ == "__main__":
 
     # Кто сегодня дежурит
     scheduler.add_job(get_duty_info, 'cron', day_of_week='*', hour=10, minute=1)
-
-    scheduler.add_job(duty_reminder_daily, 'cron', day_of_week='*',  hour='*', minute='*', second='*/20')
+    scheduler.add_job(duty_reminder_daily, 'cron', day_of_week='*',  hour=9, minute=45)
 
     # Who is next?
     scheduler.add_job(lambda: call_who_is_next(jira_connect), 'interval', minutes=1, max_instances=1)
