@@ -794,7 +794,7 @@ if __name__ == "__main__":
     # Кто сегодня дежурит
     scheduler.add_job(get_duty_info, 'cron', day_of_week='*', hour=10, minute=1)
 
-    scheduler.add_job(duty_reminder_daily, 'cron', day_of_week='*',  hour='*', minute='*', seconds='*/20')
+    scheduler.add_job(duty_reminder_daily, 'cron', day_of_week='*',  hour='*', minute='*', second='*/20')
 
     # Who is next?
     scheduler.add_job(lambda: call_who_is_next(jira_connect), 'interval', minutes=1, max_instances=1)
