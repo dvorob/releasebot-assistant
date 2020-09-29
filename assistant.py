@@ -107,6 +107,20 @@ class MysqlPool:
         finally:
             self.db.close()
 
+    def get_duty_in_area(self, duty_date, area) -> list:
+        # Сходить в таблицу xerxes.duty_list за дежурными на заданную дату и зону ответственности
+        try:
+            self.db.connect(reuse_if_open=True)
+            result = []
+            db_query = Duty_List.select().where(Duty_List.duty_date == duty_date, Duty_List.area == area)
+            for v in db_query:
+                result.append((vars(v))['__data__'])
+            logger.info('get duty for %s %s %s', duty_date, area, result)
+            return result
+        except Exception as e:
+            logger.exception('exception in db get duty in area %s', str(e))
+        finally:
+            self.db.close()
 
     def get_users(self, field, value, operation) -> list:
         # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
@@ -211,6 +225,21 @@ def request_write_aerospike(item, bins, aerospike_set):
     all_return_queue_task = requests.post(config.api_aerospike_write, headers=headers, json=bins)
     return all_return_queue_task
 
+
+def send_message_to_users(accounts, message):
+    """
+        data = {'accounts': ['ymvorobevda'], 'text': 'Работает!'}
+    """
+    logger.info('Send message to users try for %s %s', accounts, message)
+    try:
+        data = {'accounts': accounts, 'text': message}
+        resp = requests.post(config.informer_send_message_url, data=json.dumps(data))
+        if resp.ok:
+            logger.info('Successfully sent message to %s %s %s', accounts, message, resp.json())
+        else:
+            logger.error('Error in send message for %s %s %s', accounts, message, resp.json())
+    except Exception as e:
+        logger.exception('Exception in send message %s', str(e))
 
 def request_telegram_send(telegram_message: dict) -> bool:
     """
@@ -364,6 +393,36 @@ def get_duty_info(after_days=None):
     except Exception:
         logger.exception('get_duty_info')
 
+def get_duty_date(date):
+    # Если запрошены дежурные до 10 утра, то это "вчерашние дежурные"
+    # Это особенность дежурств в Департаменте
+    if int(datetime.today().strftime("%H")) < int(10):
+        return date - timedelta(1)
+    else:
+        return date
+
+def duty_informing_from_schedule(after_days=None, area, msg):
+    """
+        Отправить уведомление дежурным на заданную дату, вычисляемую по отступу от текущей
+    """
+    duty_date = get_duty_date(datetime.today()) + timedelta(after_days)
+    dutymen_array = mysql.get_duty_in_area(duty_date, area)
+    if len(dutymen_array) > 0:
+        for d in dutymen_array:
+            try:
+                dutymen = mysql.get_users('account_name', d['account_name'], 'equal')
+                send_message_to_users(chat_id=dutymen[0]['tg_id'], text=msg)
+            except BotBlocked:
+                logger.info('YM release bot was blocked by %s', d['tg_login'])
+            except ChatNotFound:
+                logger.error('Chat not found with: %s', d['tg_login'])
+
+def duty_reminder_daily():
+    msg = 'Ты сегодня дежуришь'
+    duty_informing_from_schedule(area='ADMSYS(empty)', msg)
+
+def weekend_reminder():
+    logger.info('remind')
 
 def duties_sync_from_exchange():
     """
@@ -394,7 +453,6 @@ def duties_sync_from_exchange():
             request_write_aerospike(item='duty',
                                     bins={duty_date.strftime("%Y-%m-%d"): msg},
                                     aerospike_set='duty_admin')
-            logger.info('Mysql: trying to save dutylist to DutyList table')
 
             # Разобрать сообщение из календаря в формат ["area (зона ответственности)", "имя дежурного", "аккаунт деужурного"]
             duty_list = []
@@ -412,7 +470,7 @@ def duties_sync_from_exchange():
                                 if len(search_duty_name) == 1:
                                     dl["account_name"] = search_duty_name[0]["account_name"]
                                     dl["tg_login"] = search_duty_name[0]["tg_login"]
-                logger.info('duty %s',dl)
+                logger.debug('duty %s',dl)
                 mysql.set_dutylist(dl)
 
     except Exception as e:
@@ -731,11 +789,12 @@ if __name__ == "__main__":
     # Сбор статистики
     scheduler.add_job(lambda: calculate_statistics(jira_connect), 'cron', day_of_week='*',
                       hour=19, minute=0)
-    scheduler.add_job(lambda: statistics_json(jira_connect), 'cron', day_of_week='*',
-                      hour=23, minute=50)
+    scheduler.add_job(lambda: statistics_json(jira_connect), 'cron', day_of_week='*', hour=23, minute=50)
 
     # Кто сегодня дежурит
     scheduler.add_job(get_duty_info, 'cron', day_of_week='*', hour=10, minute=1)
+
+    scheduler.add_job(duty_reminder_daily, 'cron', day_of_week='*',  hour='*', minute='*', seconds='*/20')
 
     # Who is next?
     scheduler.add_job(lambda: call_who_is_next(jira_connect), 'interval', minutes=1, max_instances=1)
@@ -745,7 +804,7 @@ if __name__ == "__main__":
 
     scheduler.add_job(sync_users_from_ad, 'cron', day_of_week='*', hour='*', minute='*/5')
     # Поскольку в 10:00 в календаре присутствует двое дежурных - за вчера и за сегодня, процедура запускается в 5, 25 и 45 минут, чтобы не натыкаться на дубли и не вычищать их
-    scheduler.add_job(duties_sync_from_exchange, 'cron', day_of_week='*', hour='*', minute='*/2')
+    scheduler.add_job(duties_sync_from_exchange, 'cron', day_of_week='*', hour='*', minute='5-59/20')
     #scheduler.add_job(notify_duties, 'cron', day_of_week='*', hour='*', minute='*')
 
     scheduler.add_job(weekend_duty, 'cron', day_of_week='fri', hour=14, minute=1)
