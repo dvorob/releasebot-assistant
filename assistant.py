@@ -4,22 +4,22 @@
     Ассистент релизного бота
     запуск джоб по расписанию, статистика и прочее
 """
+import config
 import json
+import ldap3
 import logging.config
 import re
-import warnings
-from datetime import timedelta, datetime
 import requests
-from playhouse.pool import PooledMySQLDatabase
-from peewee import *
+import warnings
 from apscheduler.schedulers.background import BlockingScheduler
-from jira import JIRA
+from datetime import timedelta, datetime
 from exchangelib import DELEGATE, Configuration, Credentials, Account
 from exchangelib.ewsdatetime import UTC_NOW
 from exchangelib.protocol import BaseProtocol, NoVerifyHTTPAdapter
-import config
-import ldap3
+from jira import JIRA
 from ldap3 import Server, Connection, SIMPLE, SYNC, ASYNC, SUBTREE, ALL
+from peewee import *
+from playhouse.pool import PooledMySQLDatabase
 
 # Отключаем предупреждения от SSL
 warnings.filterwarnings('ignore')
@@ -235,9 +235,9 @@ def send_message_to_users(accounts, message):
         data = {'accounts': accounts, 'text': message}
         resp = requests.post(config.informer_send_message_url, data=json.dumps(data))
         if resp.ok:
-            logger.info('Successfully sent message to %s %s %s', accounts, message, resp.json())
+            logger.info('Successfully sent message to %s %s %s', accounts, message, resp)
         else:
-            logger.error('Error in send message for %s %s %s', accounts, message, resp.json())
+            logger.error('Error in send message for %s %s %s', accounts, message, resp)
     except Exception as e:
         logger.exception('Exception in send message %s', str(e))
 
@@ -418,11 +418,13 @@ def duty_informing_from_schedule(after_days, area, msg):
                 logger.error('Chat not found with: %s', d['tg_login'])
 
 def duty_reminder_daily():
-    msg = 'Ты сегодня дежуришь'
+    msg = 'Крепись. Ты сегодня дежуришь.'
     duty_informing_from_schedule(0, 'ADMSYS(empty)', msg)
+
 
 def weekend_reminder():
     logger.info('remind')
+
 
 def duties_sync_from_exchange():
     """
