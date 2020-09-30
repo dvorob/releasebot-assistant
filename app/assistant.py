@@ -528,13 +528,12 @@ if __name__ == "__main__":
     # Отключаем предупреждения от SSL
     warnings.filterwarnings('ignore')
     logger = logging.setup()
+    logger.info('- - - START ASSISTANT - - - ')
 
-    options = {
-        'server': config.jira_host, 'verify': False
-    }
-    jira_connect = JIRA(options, basic_auth=(config.jira_user, config.jira_pass))
+    jira_connect = JIRA(config.jira_options, basic_auth=(config.jira_user, config.jira_pass))
     mysql = MysqlPool()
 
+    # --- SCHEDULING ---
     # Инициализируем расписание
     scheduler = BlockingScheduler(timezone='Europe/Moscow')
 
