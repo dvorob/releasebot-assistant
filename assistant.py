@@ -324,75 +324,6 @@ def get_dismissed_users():
         logger.exception('exception in get_users', str(e))
 
 
-def get_duty_info(after_days=None):
-    """
-        Find out information about duty admin and send them
-        Function is called in 10.01 without parameters.
-        :param after_days - using in weekend_duty function
-        :return: name of duty, if after_days
-    """
-    try:
-        logger.info('get_duty_info started!')
-
-        msg = 'Дежурят сейчас:\n'
-        delta = 0 if not after_days else int(after_days) * 24 * 60
-
-        cal_start = UTC_NOW() + timedelta(minutes=delta)
-        cal_end = UTC_NOW() + timedelta(minutes=delta + 1)
-
-        # go to exchange for knowledge
-        old_msg, new_msg = ex_duty(cal_start, cal_end)
-        msg += old_msg
-
-        logger.info('I find duty\n%s', msg)
-
-        # Если то, что мы нашли, не пусто,то вытащим дежурного по порталу, биллингу и инфре,
-        # дальше get_key словаря, в котором лежат фио_tgusername админов и вытащим
-        # chat_id сегодняшних дежурных
-        if len(msg):
-            billing_duty_adm = re.compile(r"ADMSYS\(биллинг\)\s?-([А-Яа-я\s]+ [А-Яа-я]+)")
-            infra_duty_adm = re.compile(r"ADMSYS\(инфра\)\s?-([А-Яа-я\s]+ [А-Яа-я]+)")
-            portal_duty_adm = re.compile(r"ADMSYS\(портал\)\s?-([А-Яа-я\s]+ [А-Яа-я]+)")
-
-            find_billing_duty = billing_duty_adm.search(msg)
-            find_infra_duty = infra_duty_adm.search(msg)
-            find_portal_duty = portal_duty_adm.search(msg)
-
-            if after_days:
-                return find_billing_duty.group(1), find_portal_duty.group(1)
-            else:
-                today_duty_adm_name = set()
-                today_duty_adm_name.add(str(find_billing_duty.group(1)).strip('\n'))
-                today_duty_adm_name.add(str(find_infra_duty.group(1)).strip('\n'))
-                today_duty_adm_name.add(str(find_portal_duty.group(1)).strip('\n'))
-
-                logger.info('По порталу сегодня дежурит %s, биллинг %s, инфра %s',
-                            find_portal_duty.group(1), find_billing_duty.group(1),
-                            find_infra_duty.group(1))
-
-                fio_chat_id = request_read_aerospike(item='all_production_admin',
-                                                     aerospike_set='duty_admin')
-                set_chat_id = set()
-                for chat_id, name in fio_chat_id.items():
-                    if name in today_duty_adm_name:
-                        msg = 'Крепись сестрица, ты сегодня дежуришь.' \
-                            if name == 'Антонина Ким' else 'Крепись брат, ты сегодня дежуришь.'
-                        telegram_message = {'chat_id': [chat_id],
-                                            'text': msg}
-                        request_telegram_send(telegram_message)
-                        set_chat_id.add(chat_id)
-                        logger.info('I sent notification to %s=%s', name, chat_id)
-                # we need put in aerospike dict with type value of list (was just set):
-                # '2019-09-04': ['123', '456']
-                # because further, when we will response via api json, we will get mistake
-                # TypeError: Object of type set is not JSON serializable,
-                request_write_aerospike(item='today_duty_adm_name',
-                                        bins={str(datetime.today().strftime("%Y-%m-%d")):
-                                                  list(set_chat_id)},
-                                        aerospike_set='duty_admin')
-    except Exception:
-        logger.exception('get_duty_info')
-
 def get_duty_date(date):
     # Если запрошены дежурные до 10 утра, то это "вчерашние дежурные"
     # Это особенность дежурств в Департаменте
@@ -407,6 +338,7 @@ def duty_informing_from_schedule(after_days, area, msg):
     """
     duty_date = get_duty_date(datetime.today()) + timedelta(after_days)
     dutymen_array = mysql.get_duty_in_area(duty_date, area)
+    logger.info('dutymen_array %s', dutymen_array)
     if len(dutymen_array) > 0:
         for d in dutymen_array:
             try:
@@ -418,10 +350,13 @@ def duty_informing_from_schedule(after_days, area, msg):
             except ChatNotFound:
                 logger.error('Chat not found with: %s', d['tg_login'])
 
+
 def duty_reminder_daily():
     msg = 'Крепись. Ты сегодня дежуришь. Если получил сообщение, напиши @dvorob =)'
     duty_informing_from_schedule(1, 'ADMSYS(портал)', msg)
     duty_informing_from_schedule(1, 'ADMSYS(биллинг)', msg)
+    duty_informing_from_schedule(1, 'ADMSYS(инфра)', msg)
+
 
 def weekend_reminder():
     logger.info('remind')
@@ -704,32 +639,17 @@ def weekend_duty():
         :return: nothing
     """
     logger.info('weekend_duty started')
-    admsys_admin = request_read_aerospike(item='all_production_admin',
-                                          aerospike_set='duty_admin')
-    # who will be duty on saturday?
-    saturday_duty = get_duty_info(1)
-    # who will be duty on sunday?
-    sunday_duty = get_duty_info(2)
-    chat_id_saturday = set()
-    chat_id_sunday = set()
-    for admin in saturday_duty:
-        chat_id_saturday.add(list(admsys_admin.keys())[list(admsys_admin.values()).index(admin)])
-    for admin in sunday_duty:
-        chat_id_sunday.add(list(admsys_admin.keys())[list(admsys_admin.values()).index(admin)])
-    for chat_id in chat_id_saturday:
-        if chat_id in chat_id_sunday:
-            telegram_message = {'chat_id': [chat_id],
-                                'text': 'Много не пей, ты дежуришь в субботу и воскресенье'}
-            request_telegram_send(telegram_message)
-            chat_id_sunday.remove(chat_id)
-        else:
-            telegram_message = {'chat_id': [chat_id],
-                                'text': 'Много не пей, ты дежуришь в субботу'}
-            request_telegram_send(telegram_message)
-    for chat_id in chat_id_sunday:
-        telegram_message = {'chat_id': [chat_id],
-                            'text': 'Много не пей, ты дежуришь в воскресенье'}
-        request_telegram_send(telegram_message)
+    # Субботние дежурные
+    msg = 'Ты дежуришь в субботу'
+    duty_informing_from_schedule(3, 'ADMSYS(empty)', msg)
+    #duty_informing_from_schedule(1, 'ADMSYS(биллинг)', msg)
+    #duty_informing_from_schedule(1, 'ADMSYS(инфра)', msg)
+    # Воскресные дежурные
+    msg = 'Ты дежуришь в воскресенье'
+    duty_informing_from_schedule(4, 'ADMSYS(empty)', msg)
+    #duty_informing_from_schedule(1, 'ADMSYS(биллинг)', msg)
+    #duty_informing_from_schedule(1, 'ADMSYS(инфра)', msg)
+
     logger.info('def weekend_duty successfully finished')
 
 
@@ -809,7 +729,7 @@ if __name__ == "__main__":
     scheduler.add_job(duties_sync_from_exchange, 'cron', day_of_week='*', hour='*', minute='5-59/20')
     #scheduler.add_job(notify_duties, 'cron', day_of_week='*', hour='*', minute='*')
 
-    scheduler.add_job(weekend_duty, 'cron', day_of_week='fri', hour=14, minute=1)
+    scheduler.add_job(weekend_duty, 'cron', day_of_week='*', hour='*', minute='*')
 
     # Запускаем расписание
     scheduler.start()
