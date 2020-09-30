@@ -344,7 +344,6 @@ def duty_informing_from_schedule(after_days, area, msg):
             try:
                 logger.info('try to send message to %s %s', d, msg)
                 send_message_to_users([d['account_name']], msg)
-                send_message_to_users(['ymvorobevda'], 'Отправил дежурному сообщение '+d['tg_login'])
             except BotBlocked:
                 logger.info('YM release bot was blocked by %s', d['tg_login'])
             except ChatNotFound:
@@ -353,23 +352,37 @@ def duty_informing_from_schedule(after_days, area, msg):
 
 def duty_reminder_daily():
     msg = 'Крепись. Ты сегодня дежуришь. Если получил сообщение, напиши @dvorob =)'
-    duty_informing_from_schedule(1, 'ADMSYS(портал)', msg)
     duty_informing_from_schedule(1, 'ADMSYS(биллинг)', msg)
+    duty_informing_from_schedule(1, 'ADMSYS(портал)', msg)
     duty_informing_from_schedule(1, 'ADMSYS(инфра)', msg)
 
 
-def weekend_reminder():
-    logger.info('remind')
+def duty_reminder_weekend():
+    """
+        Send message to admin, who will duty on weekend
+        :return: nothing
+    """
+    logger.info('duty reminder weekend started')
+    # Субботние дежурные
+    msg = 'Ты дежуришь в субботу'
+    duty_informing_from_schedule(1, 'ADMSYS(биллинг)', msg)
+    duty_informing_from_schedule(1, 'ADMSYS(портал)', msg)
+    duty_informing_from_schedule(1, 'ADMSYS(инфра)', msg)
+    # Воскресные дежурные
+    msg = 'Ты дежуришь в воскресенье'
+    duty_informing_from_schedule(2, 'ADMSYS(биллинг)', msg)
+    duty_informing_from_schedule(2, 'ADMSYS(портал)', msg)
+    duty_informing_from_schedule(2, 'ADMSYS(инфра)', msg)
 
 
-def duties_sync_from_exchange():
+def sync_duties_from_exchange():
     """
         Ходит в Exchange и выгребает информацию о дежурствах. Помещает информацию в БД (пока aerospike).
         Все остальные методы ходят за инфой о дежурных в БД.
         Вызывается по cron-у, следовательно изменения в календаре отразятся в боте
     """
     try:
-        logger.info('get_duty_info started!')
+        logger.info('sync duties from exchange started!')
         duty_areas = ['ADMSYS', 'NOC', 'ADMWIN', 'IPTEL', 'ADMMSSQL', 'PROCESS', 'DEVOPS', 'TECH', 'INFOSEC', 'ora', 'pg']
 
         # Go to Exchange calendar and get duites for 7 next days
@@ -412,21 +425,7 @@ def duties_sync_from_exchange():
                 mysql.set_dutylist(dl)
 
     except Exception as e:
-        logger.exception('exception in duties_sync_from_exchange %s', str(e))
-
-
-def notify_duties(duty_date=datetime.today()):
-    """
-        Нотификация дежурным утром
-    """
-    dutymen = mysql.get_users('notification', 'duty', 'like')
-    logger.info('today duties to notify %s %s', dutymen, duty_date)
-
-    # for chat_id in duties_chat_id[today]:
-    #     msg = 'Крепись, ты сегодня дежуришь.'
-    #     telegram_message = {'chat_id': [chat_id], 'text': msg}
-    #     request_telegram_send(telegram_message)
-    #     logger.info('I sent today duty notification to %s', chat_id)
+        logger.exception('exception in sync duties from exchange %s', str(e))
 
 
 def ex_connect():
@@ -633,26 +632,6 @@ def who_is_next(jira_con):
                             return task
 
 
-def weekend_duty():
-    """
-        Send message to admin, who will duty on weekend
-        :return: nothing
-    """
-    logger.info('weekend_duty started')
-    # Субботние дежурные
-    msg = 'Ты дежуришь в субботу'
-    duty_informing_from_schedule(3, 'ADMSYS(empty)', msg)
-    #duty_informing_from_schedule(1, 'ADMSYS(биллинг)', msg)
-    #duty_informing_from_schedule(1, 'ADMSYS(инфра)', msg)
-    # Воскресные дежурные
-    msg = 'Ты дежуришь в воскресенье'
-    duty_informing_from_schedule(4, 'ADMSYS(empty)', msg)
-    #duty_informing_from_schedule(1, 'ADMSYS(биллинг)', msg)
-    #duty_informing_from_schedule(1, 'ADMSYS(инфра)', msg)
-
-    logger.info('def weekend_duty successfully finished')
-
-
 def sync_users_from_ad():
     """
         Сходить в AD, забрать логины, tg-логины, рабочий статус с преобразованием в (working, dismissed)
@@ -710,12 +689,12 @@ if __name__ == "__main__":
     scheduler = BlockingScheduler(timezone='Europe/Moscow')
 
     # Сбор статистики
-    scheduler.add_job(lambda: calculate_statistics(jira_connect), 'cron', day_of_week='*',
-                      hour=19, minute=0)
+    scheduler.add_job(lambda: calculate_statistics(jira_connect), 'cron', day_of_week='*', hour=19, minute=0)
     scheduler.add_job(lambda: statistics_json(jira_connect), 'cron', day_of_week='*', hour=23, minute=50)
 
-    # Кто сегодня дежурит
+    # Напоминания о дежурствах
     scheduler.add_job(duty_reminder_daily, 'cron', day_of_week='*',  hour=9, minute=45)
+    scheduler.add_job(duty_reminder_weekend, 'cron', day_of_week='fri', hour=14, minute=1)
 
     # Who is next?
     scheduler.add_job(lambda: call_who_is_next(jira_connect), 'interval', minutes=1, max_instances=1)
@@ -724,11 +703,9 @@ if __name__ == "__main__":
     scheduler.add_job(get_dismissed_users, 'cron', day_of_week='*', hour='*', minute='45')
 
     scheduler.add_job(sync_users_from_ad, 'cron', day_of_week='*', hour='*', minute='*/5')
-    # Поскольку в 10:00 в календаре присутствует двое дежурных - за вчера и за сегодня, процедура запускается в 5, 25 и 45 минут, чтобы не натыкаться на дубли и не вычищать их
-    scheduler.add_job(duties_sync_from_exchange, 'cron', day_of_week='*', hour='*', minute='5-59/20')
-    #scheduler.add_job(notify_duties, 'cron', day_of_week='*', hour='*', minute='*')
 
-    scheduler.add_job(weekend_duty, 'cron', day_of_week='*', hour='*', minute='*')
+    # Поскольку в 10:00 в календаре присутствует двое дежурных - за вчера и за сегодня, процедура запускается в 5, 25 и 45 минут, чтобы не натыкаться на дубли и не вычищать их
+    scheduler.add_job(sync_duties_from_exchange, 'cron', day_of_week='*', hour='*', minute='5-59/20')
 
     # Запускаем расписание
     scheduler.start()
