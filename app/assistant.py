@@ -4,13 +4,15 @@
     Ассистент релизного бота
     запуск джоб по расписанию, статистика и прочее
 """
-import config
+import app.config as config
 import json
 import ldap3
 import logging.config
 import re
 import requests
 import warnings
+from app.utils import logging
+from app.utils.database import MysqlPool as db
 from apscheduler.schedulers.background import BlockingScheduler
 from datetime import timedelta, datetime
 from exchangelib import DELEGATE, Configuration, Credentials, Account
@@ -20,157 +22,6 @@ from jira import JIRA
 from ldap3 import Server, Connection, SIMPLE, SYNC, ASYNC, SUBTREE, ALL
 from peewee import *
 from playhouse.pool import PooledMySQLDatabase
-
-# Отключаем предупреждения от SSL
-warnings.filterwarnings('ignore')
-
-# Настраиваем работу с Mysql. Надо бы вынести это в ручку API
-__all__ = ['MysqlPool']
-
-config_mysql = PooledMySQLDatabase(
-    config.db_name,
-    host=config.db_host,
-    user=config.db_user,
-    passwd=config.db_pass,
-    max_connections=8,
-    stale_timeout=300)
-
-class BaseModel(Model):
-    class Meta:
-        database = config_mysql
-
-class Users(BaseModel):
-    id = IntegerField()
-    account_name = CharField(unique=True)
-    full_name = CharField()
-    tg_login = CharField()
-    tg_id = CharField()
-    working_status = CharField()
-    email = CharField()
-    notification = CharField(default='none')
-    admin = IntegerField(default=0)
-    date_update = DateTimeField()
-
-class Duty_List(BaseModel):
-    id = IntegerField()
-    duty_date = DateField(index=True)
-    area = CharField()
-    full_name = CharField()
-    account_name = CharField()
-    full_text = CharField()
-    tg_login = CharField()
-
-    class Meta:
-        indexes = (
-            (('duty_list', 'area'), True)
-        )
-
-class MysqlPool:
-    def __init__(self):
-        self.db = config_mysql
-
-    def set_users(self, account_name, full_name, tg_login, working_status, email):
-        # Записать пользователя в таблицу Users. Переберет параметры и запишет только те из них, что заданы. 
-        # Иными словами, если вычитали пользователя из AD с полным набором полей, запись будет создана, поля заполнены.
-        # Если передадим tg_id для существующего пользователя, заполнится только это поле
-        logger.debug('set users started for %s ', account_name)
-        try:
-            self.db.connect(reuse_if_open=True)
-            db_users, _ = Users.get_or_create(account_name=account_name)
-            if full_name:
-                db_users.full_name = full_name
-            if tg_login:
-                db_users.tg_login = tg_login
-            if working_status:
-                db_users.working_status = working_status
-            if email:
-                db_users.email = email
-            db_users.date_update = datetime.now()
-            db_users.save()
-        except Exception as e:
-            logger.exception('exception in set_users %s', str(e))
-        finally:
-            self.db.close()
-
-
-    def set_dutylist(self, dl):
-        try:
-            self.db.connect(reuse_if_open=True)
-            db_duty, _ = Duty_List.get_or_create(duty_date=dl['duty_date'], area=dl['area'])
-            db_duty.full_name = dl['full_name']
-            db_duty.account_name = dl['account_name']
-            db_duty.full_text = dl['full_text']
-            db_duty.tg_login = dl['tg_login']
-            db_duty.save()
-        except Exception as e:
-            logger.exception('error in set dutylist %s', str(e))
-        finally:
-            self.db.close()
-
-    def get_duty_in_area(self, duty_date, area) -> list:
-        # Сходить в таблицу xerxes.duty_list за дежурными на заданную дату и зону ответственности
-        try:
-            self.db.connect(reuse_if_open=True)
-            result = []
-            db_query = Duty_List.select().where(Duty_List.duty_date == duty_date, Duty_List.area == area)
-            for v in db_query:
-                result.append((vars(v))['__data__'])
-            logger.info('get duty for %s %s %s', duty_date, area, result)
-            return result
-        except Exception as e:
-            logger.exception('exception in db get duty in area %s', str(e))
-        finally:
-            self.db.close()
-
-    def get_users(self, field, value, operation) -> list:
-        # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
-        # например, найти Воробьева можно запросом db_get_users('account_name', 'ymvorobevda')
-        # всех админов - запросом db_get_users('admin', 1)
-        logger.info('db_get_users param1 param2 %s %s', field, value)
-        result = []
-        try:
-            self.db.connect(reuse_if_open=True)
-            if operation == 'equal':
-                db_users = Users.select().where(getattr(Users, field) == value)
-            elif operation == 'like':
-                db_users = Users.select().where(getattr(Users, field) % value)
-            else:
-                db_users = []
-            for v in db_users:
-                result.append((vars(v))['__data__'])
-            return result
-        except Exception:
-            logger.exception('exception in db get users')
-            return result
-        finally:
-            self.db.close()
-
-
-    def get_user_by_fullname(self, value) -> list:
-        # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
-        # например, найти Воробьева можно запросом db_get_users('account_name', 'ymvorobevda')
-        # всех админов - запросом db_get_users('admin', 1)
-        result = []
-        try:
-            self.db.connect(reuse_if_open=True)
-            full_name = re.split(' ', value)
-            if len(full_name) > 1:
-                db_users = Users.select().where(
-                    (Users.full_name.startswith(full_name[0]) & Users.full_name.endswith(full_name[1])) |
-                    (Users.full_name.startswith(full_name[1]) & Users.full_name.endswith(full_name[0])))
-            elif len(full_name) == 1:
-                db_users = Users.select().where(Users.full_name.endswith(full_name[0]))
-            else:
-                db_users = ['Nobody']
-            for v in db_users:
-                result.append((vars(v))['__data__'])
-            return result
-        except Exception as e:
-            logger.exception('exception in get user by fullname %s', str(e))
-            return result
-        finally:
-            self.db.close()
-
 
 def statistics_json(jira_con):
     """
@@ -317,7 +168,7 @@ def get_dismissed_users():
             for entry in conn.entries:
                 if re.search("Уволенные", str(entry.distinguishedName)):
                     logger.info('%s was dismissed', v['account_name'])
-                    mysql.set_users(v['account_name'], full_name=None, tg_login=None, working_status='dismissed', email=None)
+                    db().set_users(v['account_name'], full_name=None, tg_login=None, working_status='dismissed', email=None)
                 else:
                     logger.info('get dismissed found that %s is still working', v["account_name"])
     except Exception as e:
@@ -337,7 +188,7 @@ def duty_informing_from_schedule(after_days, area, msg):
         Отправить уведомление дежурным на заданную дату, вычисляемую по отступу от текущей
     """
     duty_date = get_duty_date(datetime.today()) + timedelta(after_days)
-    dutymen_array = mysql.get_duty_in_area(duty_date, area)
+    dutymen_array = db().get_duty_in_area(duty_date, area)
     logger.info('dutymen_array %s', dutymen_array)
     if len(dutymen_array) > 0:
         for d in dutymen_array:
@@ -416,13 +267,13 @@ def sync_duties_from_exchange():
                     if "area" in dl:
                         if len(re.findall(area+'.*-', msg)) > 0:
                             dl["full_name"] = re.sub(r'^ | +$ | ', '', msg[re.search(area+".*-", msg).end():])
-                            search_duty_name = mysql.get_user_by_fullname(dl["full_name"])
+                            search_duty_name = db().get_user_by_fullname(dl["full_name"])
                             if search_duty_name:
                                 if len(search_duty_name) == 1:
                                     dl["account_name"] = search_duty_name[0]["account_name"]
                                     dl["tg_login"] = search_duty_name[0]["tg_login"]
                 logger.debug('duty %s',dl)
-                mysql.set_dutylist(dl)
+                db().set_dutylist(dl)
 
     except Exception as e:
         logger.exception('exception in sync duties from exchange %s', str(e))
@@ -666,7 +517,7 @@ def sync_users_from_ad():
     try:
         for k, v in users_dict.items():
             logger.debug('Sync users from ad users_dict %s', v)
-            mysql.set_users(v['account_name'], v['full_name'], v['tg_login'], v['working_status'], v['email'])
+            db().set_users(v['account_name'], v['full_name'], v['tg_login'], v['working_status'], v['email'])
         logger.info('Mysql: Users saving is completed')
     except Exception as e:
         logger.exception('exception in sync users from ad %s', str(e))
@@ -674,16 +525,15 @@ def sync_users_from_ad():
 
 if __name__ == "__main__":
 
+    # Отключаем предупреждения от SSL
+    warnings.filterwarnings('ignore')
+    logger = logging.setup()
+
     options = {
         'server': config.jira_host, 'verify': False
     }
     jira_connect = JIRA(options, basic_auth=(config.jira_user, config.jira_pass))
     mysql = MysqlPool()
-
-    # Настраиваем логи
-    logging.config.fileConfig('/etc/xerxes/logging_assistant.conf')
-    logger = logging.getLogger("assistant")
-    logger.propagate = False
 
     # Инициализируем расписание
     scheduler = BlockingScheduler(timezone='Europe/Moscow')
