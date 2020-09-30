@@ -54,6 +54,14 @@ jira_filter_wip = 'project = ADMSYS AND ' \
                   'status not in (Closed, Resolved, "Waiting release") ' \
                   'ORDER BY priority DESC, updatedDate ASC'
 
+mysql = PooledMySQLDatabase(
+    config.db_name,
+    host=config.db_host,
+    user=config.db_user,
+    passwd=config.db_pass,
+    max_connections=8,
+    stale_timeout=300)
+
 api = 'http://xerxes-api-v1/api-v1'
 api_chat_id = f'{api}/chat-id'
 api_aerospike_read = f'{api}/aerospike/read'
