@@ -715,7 +715,6 @@ if __name__ == "__main__":
     scheduler.add_job(lambda: statistics_json(jira_connect), 'cron', day_of_week='*', hour=23, minute=50)
 
     # Кто сегодня дежурит
-    scheduler.add_job(get_duty_info, 'cron', day_of_week='*', hour=10, minute=1)
     scheduler.add_job(duty_reminder_daily, 'cron', day_of_week='*',  hour=9, minute=45)
 
     # Who is next?
