@@ -202,7 +202,7 @@ def duty_informing_from_schedule(after_days, area, msg):
 
 
 def duty_reminder_daily():
-    msg = 'Крепись. Ты сегодня дежуришь.'
+    msg = 'Через 15 минут начинается твой дозор.'
     duty_informing_from_schedule(1, 'ADMSYS(биллинг)', msg)
     duty_informing_from_schedule(1, 'ADMSYS(портал)', msg)
     duty_informing_from_schedule(1, 'ADMSYS(инфра)', msg)
@@ -236,8 +236,8 @@ def sync_duties_from_exchange():
         logger.info('sync duties from exchange started!')
         duty_areas = ['ADMSYS', 'NOC', 'ADMWIN', 'IPTEL', 'ADMMSSQL', 'PROCESS', 'DEVOPS', 'TECH', 'INFOSEC', 'ora', 'pg']
 
-        # Go to Exchange calendar and get duites for 7 next days
-        for i in range(0, 13):
+        # Go to Exchange calendar and get duites for 30 next days
+        for i in range(0, 30):
             msg = 'Дежурят сейчас:\n'   
             # Вычисляем правильный день для дежурств, с учетом наших 10-часовых особенностей
             if int(datetime.today().strftime("%H")) < int(10):
