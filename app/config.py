@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from os import getenv
+from playhouse.pool import PooledMySQLDatabase
 
 ex_host = 'mail-mx10.yamoney.ru'
 ex_user = getenv('secret_exchange_user')
@@ -62,10 +63,13 @@ api_aerospike_write = f'{api}/aerospike/write'
 api_tg_send = f'{api}/tg/send'
 
 #MySQL configuration
-db_host = 'mysql.xerxes.svc.ugr-base1.kube.yamoney.ru'
-db_user = getenv('secret_mysql_user')
-db_pass = getenv('secret_mysql_pass')
-db_name = 'xerxes'
+mysql = PooledMySQLDatabase(
+    'xerxes',
+    host='mysql.xerxes.svc.ugr-base1.kube.yamoney.ru',
+    user=getenv('secret_mysql_user'),
+    passwd=getenv('secret_mysql_pass'),
+    max_connections=8,
+    stale_timeout=300)
 
 # AD configuration
 ad_host = 'ivan-voucher.yamoney.ru'
