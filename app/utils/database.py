@@ -14,7 +14,13 @@ __all__ = ['MysqlPool']
 
 class BaseModel(Model):
     class Meta:
-        database = config.mysql
+        database = PooledMySQLDatabase(
+            config.db_name,
+            host=config.db_host,
+            user=config.db_user,
+            passwd=config.db_pass,
+            max_connections=8,
+            stale_timeout=300)
 
 class Users(BaseModel):
     id = IntegerField()
