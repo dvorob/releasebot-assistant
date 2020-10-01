@@ -15,6 +15,7 @@ jira_host = 'https://jira.yamoney.ru/'
 # через secret задается в кубере
 jira_user = getenv('secret_jira_user')
 jira_pass = getenv('secret_jira_pass')
+jira_options = {'server': jira_host, 'verify': False}
 jira_filter_returned = 'project = ADMSYS AND ' \
                        'issuetype = "Release (conf)" AND ' \
                        '(status not in (Closed, Resolved) OR updated >= startOfDay() ' \
