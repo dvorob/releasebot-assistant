@@ -4,15 +4,13 @@
     Ассистент релизного бота
     запуск джоб по расписанию, статистика и прочее
 """
-import app.config as config
+import config
 import json
 import ldap3
 import logging.config
 import re
 import requests
 import warnings
-from app.utils import logging
-from app.utils.database import MysqlPool as db
 from apscheduler.schedulers.background import BlockingScheduler
 from datetime import timedelta, datetime
 from exchangelib import DELEGATE, Configuration, Credentials, Account
@@ -22,6 +20,13 @@ from jira import JIRA
 from ldap3 import Server, Connection, SIMPLE, SYNC, ASYNC, SUBTREE, ALL
 from peewee import *
 from playhouse.pool import PooledMySQLDatabase
+
+# Отключаем предупреждения от SSL
+warnings.filterwarnings('ignore')
+
+# Настраиваем работу с Mysql. Надо бы вынести это в ручку API
+__all__ = ['MysqlPool']
+
 
 def statistics_json(jira_con):
     """
@@ -168,7 +173,7 @@ def get_dismissed_users():
             for entry in conn.entries:
                 if re.search("Уволенные", str(entry.distinguishedName)):
                     logger.info('%s was dismissed', v['account_name'])
-                    db().set_users(v['account_name'], full_name=None, tg_login=None, working_status='dismissed', email=None)
+                    mysql.set_users(v['account_name'], full_name=None, tg_login=None, working_status='dismissed', email=None)
                 else:
                     logger.info('get dismissed found that %s is still working', v["account_name"])
     except Exception as e:
@@ -188,7 +193,7 @@ def duty_informing_from_schedule(after_days, area, msg):
         Отправить уведомление дежурным на заданную дату, вычисляемую по отступу от текущей
     """
     duty_date = get_duty_date(datetime.today()) + timedelta(after_days)
-    dutymen_array = db().get_duty_in_area(duty_date, area)
+    dutymen_array = mysql.get_duty_in_area(duty_date, area)
     logger.info('dutymen_array %s', dutymen_array)
     if len(dutymen_array) > 0:
         for d in dutymen_array:
@@ -202,7 +207,7 @@ def duty_informing_from_schedule(after_days, area, msg):
 
 
 def duty_reminder_daily():
-    msg = 'Крепись. Ты сегодня дежуришь.'
+    msg = 'Через 15 минут начинается твой дозор.'
     duty_informing_from_schedule(1, 'ADMSYS(биллинг)', msg)
     duty_informing_from_schedule(1, 'ADMSYS(портал)', msg)
     duty_informing_from_schedule(1, 'ADMSYS(инфра)', msg)
@@ -252,6 +257,10 @@ def sync_duties_from_exchange():
             msg += old_msg
 
             logger.info('I find duty for %s %s', duty_date.strftime("%Y-%m-%d"), msg)
+            request_write_aerospike(item='duty',
+                                    bins={duty_date.strftime("%Y-%m-%d"): msg},
+                                    aerospike_set='duty_admin')
+
             # Разобрать сообщение из календаря в формат ["area (зона ответственности)", "имя дежурного", "аккаунт деужурного"]
             duty_list = []
             for msg in new_msg:
@@ -263,13 +272,13 @@ def sync_duties_from_exchange():
                     if "area" in dl:
                         if len(re.findall(area+'.*-', msg)) > 0:
                             dl["full_name"] = re.sub(r'^ | +$ | ', '', msg[re.search(area+".*-", msg).end():])
-                            search_duty_name = db().get_user_by_fullname(dl["full_name"])
+                            search_duty_name = mysql.get_user_by_fullname(dl["full_name"])
                             if search_duty_name:
                                 if len(search_duty_name) == 1:
                                     dl["account_name"] = search_duty_name[0]["account_name"]
                                     dl["tg_login"] = search_duty_name[0]["tg_login"]
                 logger.debug('duty %s',dl)
-                db().set_dutylist(dl)
+                mysql.set_dutylist(dl)
 
     except Exception as e:
         logger.exception('exception in sync duties from exchange %s', str(e))
@@ -513,7 +522,7 @@ def sync_users_from_ad():
     try:
         for k, v in users_dict.items():
             logger.debug('Sync users from ad users_dict %s', v)
-            db().set_users(v['account_name'], v['full_name'], v['tg_login'], v['working_status'], v['email'])
+            mysql.set_users(v['account_name'], v['full_name'], v['tg_login'], v['working_status'], v['email'])
         logger.info('Mysql: Users saving is completed')
     except Exception as e:
         logger.exception('exception in sync users from ad %s', str(e))
@@ -521,15 +530,12 @@ def sync_users_from_ad():
 
 if __name__ == "__main__":
 
-    # Отключаем предупреждения от SSL
-    warnings.filterwarnings('ignore')
-    logger = logging.setup()
-    logger.info('- - - START ASSISTANT - - - ')
-
-    jira_connect = JIRA(config.jira_options, basic_auth=(config.jira_user, config.jira_pass))
+    options = {
+        'server': config.jira_host, 'verify': False
+    }
+    jira_connect = JIRA(options, basic_auth=(config.jira_user, config.jira_pass))
     mysql = MysqlPool()
 
-    # --- SCHEDULING ---
     # Инициализируем расписание
     scheduler = BlockingScheduler(timezone='Europe/Moscow')
 
