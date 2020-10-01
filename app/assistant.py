@@ -527,7 +527,6 @@ if __name__ == "__main__":
     logger.info('- - - START ASSISTANT - - - ')
 
     jira_connect = JIRA(config.jira_options, basic_auth=(config.jira_user, config.jira_pass))
-    mysql = MysqlPool()
 
     # --- SCHEDULING ---
     # Инициализируем расписание
