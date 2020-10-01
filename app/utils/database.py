@@ -7,7 +7,6 @@ from datetime import datetime
 from app.utils import logging
 import app.config as config
 from peewee import *
-from playhouse.pool import PooledMySQLDatabase
 
 logger = logging.setup()
 
@@ -15,13 +14,7 @@ __all__ = ['MysqlPool']
 
 class BaseModel(Model):
     class Meta:
-        database = PooledMySQLDatabase(
-            config.db_name,
-            host=config.db_host,
-            user=config.db_user,
-            passwd=config.db_pass,
-            max_connections=8,
-            stale_timeout=300)
+        database = config.mysql
 
 class Users(BaseModel):
     id = IntegerField()
