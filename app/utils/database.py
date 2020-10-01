@@ -7,6 +7,7 @@ from datetime import datetime
 from app.utils import logging
 import app.config as config
 from peewee import *
+from playhouse.pool import PooledMySQLDatabase
 
 logger = logging.setup()
 
