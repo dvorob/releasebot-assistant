@@ -44,7 +44,7 @@ class Duty_List(BaseModel):
 
 class MysqlPool:
     def __init__(self):
-        self.db = config_mysql
+        self.db = config.mysql
 
     def set_users(self, account_name, full_name, tg_login, working_status, email):
         # Записать пользователя в таблицу Users. Переберет параметры и запишет только те из них, что заданы. 
