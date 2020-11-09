@@ -34,7 +34,7 @@ node('docker') {
                 writeYaml file: 'tag-values.yaml', data: prepare_tag_yaml
                 withDockerRegistry([ url: "https://${registry}", credentialsId: credentials.registryCredentialsId ]) {
                     def image_build = docker.build("${registry}/yamoney/${image}", "-f Dockerfile --pull .")
-                    image_version = "0.${BUILD_NUMBER}"
+                    def image_version = "0.${BUILD_NUMBER}"
                     image_build.push(image_version)
                     image_build.push('latest')
                 }
@@ -50,25 +50,25 @@ node('docker') {
                 }
             }
             stage('helm lint') {
-                docker.image(helm_image).inside("-v ${home_dir}/ansible/secret_vars/kube_config.yml:/opt/ymreleasebot/kube_config.yml -v ${home_dir}/ansible/secret_vars/values.yaml:/opt/ymreleasebot/secret_values.yaml -v ${home_dir}/deploy/:/opt/ymreleasebot/ -v ${home_dir}/tag-values.yaml:/opt/ymreleasebot/tag-values.yaml") {
+                docker.image(helm_image).inside("-v ${home_dir}/ansible/secret_vars/kube_config.yml:/opt/releasebot/kube_config.yml -v ${home_dir}/ansible/secret_vars/values.yaml:/opt/releasebot/secret_values.yaml -v ${home_dir}/deploy/:/opt/releasebot/ -v ${home_dir}/tag-values.yaml:/opt/releasebot/tag-values.yaml") {
                  sh '''
-                 cd /opt/ymreleasebot &&
-                 helm lint . --kubeconfig /opt/ymreleasebot/kube_config.yml -f values.yaml -f tag-values.yaml -f secret_values.yaml
+                 cd /opt/releasebot &&
+                 helm lint . --kubeconfig /opt/releasebot/kube_config.yml -f values.yaml -f tag-values.yaml -f secret_values.yaml
                  '''
                  }
             }
             stage('verify existence ns') {
-                docker.image(helm_image).inside("-v ${home_dir}/ansible/secret_vars/kube_config.yml:/opt/ymreleasebot/kube_config.yml") {
+                docker.image(helm_image).inside("-v ${home_dir}/ansible/secret_vars/kube_config.yml:/opt/releasebot/kube_config.yml") {
                 sh '''
-                kubectl --kubeconfig=/opt/ymreleasebot/kube_config.yml get namespace ymreleasebot || kubectl --kubeconfig=/opt/ymreleasebot/kube_config.yml create namespace ymreleasebot
+                kubectl --kubeconfig=/opt/releasebot/kube_config.yml get namespace ymreleasebot || kubectl --kubeconfig=/opt/releasebot/kube_config.yml create namespace ymreleasebot
                 '''
                 }
             }
             stage('helm install') {
-                docker.image(helm_image).inside("-v ${home_dir}/ansible/secret_vars/kube_config.yml:/opt/ymreleasebot/kube_config.yml -v ${home_dir}/ansible/secret_vars/values.yaml:/opt/ymreleasebot/secret_values.yaml -v ${home_dir}/deploy/:/opt/ymreleasebot/ -v ${home_dir}/tag-values.yaml:/opt/ymreleasebot/tag-values.yaml") {
+                docker.image(helm_image).inside("-v ${home_dir}/ansible/secret_vars/kube_config.yml:/opt/releasebot/kube_config.yml -v ${home_dir}/ansible/secret_vars/values.yaml:/opt/releasebot/secret_values.yaml -v ${home_dir}/deploy/:/opt/releasebot/ -v ${home_dir}/tag-values.yaml:/opt/releasebot/tag-values.yaml") {
                  sh '''
                  cd /opt/ymreleasebot &&
-                 helm upgrade --install ymreleasebot-assistant . --kubeconfig /opt/ymreleasebot/kube_config.yml -f values.yaml -f tag-values.yaml -f secret_values.yaml --debug -n ymreleasebot
+                 helm upgrade --install ymreleasebot-assistant . --kubeconfig /opt/releasebot/kube_config.yml -f values.yaml -f tag-values.yaml -f secret_values.yaml --debug -n ymreleasebot
                  '''
                  }
             }
