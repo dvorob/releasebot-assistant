@@ -75,7 +75,7 @@ mysql = PooledMySQLDatabase(
 db = PooledPostgresqlExtDatabase(
     'my_app',
     max_connections=32,
-    stale_timeout=300,  # 5 minutes.
+    stale_timeout=300,
     user='postgres')
 
 # AD configuration
