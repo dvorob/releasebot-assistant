@@ -1,9 +1,9 @@
 ## YMreleaseBot configuration
 
 ymreleasebot:
-  name: 'xerxes-assistant'
+  name: 'releasebot-assistant'
   count_replicas: 1
-  image: 'docker-ym.nexus.yamoney.ru/yamoney/xerxes-assistant'
+  image: 'docker-ym.nexus.yamoney.ru/yamoney/releasebot-assistant'
   tag: <value>
   mysql:
     name: mysql
