@@ -7,7 +7,7 @@ if [ -z ${1} ]; then
 
 else
 
-    docker build . -f assistant.Dockerfile --compress -t docker-ym.nexus.yamoney.ru/yamoney/xerxes-assistant:${1} && \
-    docker push docker-ym.nexus.yamoney.ru/yamoney/xerxes-assistant:${1}
+    docker build . -f assistant.Dockerfile --compress -t docker-ym.nexus.yamoney.ru/yamoney/releasebot-assistant:${1} && \
+    docker push docker-ym.nexus.yamoney.ru/yamoney/releasebot-assistant:${1}
 
 fi
