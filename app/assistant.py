@@ -202,7 +202,7 @@ def duty_informing_from_schedule(after_days, area, msg):
 
 
 def duty_reminder_daily():
-    msg = 'Через 15 минут начинается твой дозор.'
+    msg = 'Крепись, ты сегодня дежуришь.'
     duty_informing_from_schedule(1, 'ADMSYS(биллинг)', msg)
     duty_informing_from_schedule(1, 'ADMSYS(портал)', msg)
     duty_informing_from_schedule(1, 'ADMSYS(инфра)', msg)

@@ -72,11 +72,11 @@ mysql = PooledMySQLDatabase(
     stale_timeout=300)
 
 #PG configuration
-db = PooledPostgresqlExtDatabase(
-    'my_app',
-    max_connections=32,
-    stale_timeout=300,
-    user='postgres')
+# db = PooledPostgresqlExtDatabase(
+#     'my_app',
+#     max_connections=32,
+#     stale_timeout=300,
+#     user='postgres')
 
 # AD configuration
 ad_host = 'ivan-voucher.yamoney.ru'
