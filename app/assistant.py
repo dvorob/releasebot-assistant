@@ -251,7 +251,8 @@ def sync_duties_from_exchange():
             old_msg, new_msg = ex_duty(cal_start, cal_end)
             msg += old_msg
 
-            logger.info('I find duty for %s %s', duty_date.strftime("%Y-%m-%d"), msg)
+            logger.info('I find duty for %s', duty_date.strftime("%Y-%m-%d"))
+            logger.debug('Duty list %s', msg)
             # Разобрать сообщение из календаря в формат ["area (зона ответственности)", "имя дежурного", "аккаунт деужурного"]
             duty_list = []
             for msg in new_msg:

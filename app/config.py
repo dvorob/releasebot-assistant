@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from os import getenv
-from playhouse.pool import PooledMySQLDatabase
+from playhouse.pool import PooledMySQLDatabase, PooledPostgresqlExtDatabase
 
 ex_host = 'mail-mx10.yamoney.ru'
 ex_user = getenv('secret_exchange_user')
@@ -70,6 +70,13 @@ mysql = PooledMySQLDatabase(
     passwd=getenv('secret_mysql_pass'),
     max_connections=8,
     stale_timeout=300)
+
+#PG configuration
+db = PooledPostgresqlExtDatabase(
+    'my_app',
+    max_connections=32,
+    stale_timeout=300,  # 5 minutes.
+    user='postgres')
 
 # AD configuration
 ad_host = 'ivan-voucher.yamoney.ru'
