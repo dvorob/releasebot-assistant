@@ -3,9 +3,9 @@
 """
 Input/output for mysql
 """
-import app.config as config
+import config
 import re
-from app.utils import logging
+from utils import logging
 from datetime import datetime
 from peewee import *
 
