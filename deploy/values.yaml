@@ -6,8 +6,8 @@ ymreleasebot:
   app_name: 'ymreleasebot'
   kafka_log_topic: 'yamoney_python_ymreleasebot'
   count_replicas: 1
-  image: 'docker-ym.nexus.yamoney.ru/yamoney/xerxes-assistant'
-  tag: <value>
+  image: 'docker-ym.nexus.yamoney.ru/yamoney/releasebot-assistant'
+  tag: 'latest'
   mysql:
     name: mysql
     port:
