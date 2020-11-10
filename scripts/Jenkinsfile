@@ -17,8 +17,9 @@ node('docker') {
         }
         def helm_image = 'docker-ym.nexus.yamoney.ru/yamoney/helm-kubectl:3.1.1'
         def registry = 'docker-ym.nexus.yamoney.ru'
-        def image = 'xerxes-assistant'
+        def image = 'releasebot-assistant'
         def home_dir = '/var/lib/jenkins/workspace/Common/YMreleaseBot/YMreleaseBot-assistant'
+        def image_version = "0.${BUILD_NUMBER}"
 
         Date date = new Date()
         String datePart = date.format("yyyy-MM-dd")
@@ -31,11 +32,10 @@ node('docker') {
 
                 echo 'Build & push docker image'
                 def commit_id = sh(script:"git rev-parse --short HEAD", returnStdout: true).trim()
-                def prepare_tag_yaml = ["ymreleasebot": ["tag": commit_id + "-" + datePart + "T" + timePart]]
+                def prepare_tag_yaml = ["ymreleasebot": ["tag": image_version]]
                 writeYaml file: 'tag-values.yaml', data: prepare_tag_yaml
                 withDockerRegistry([ url: "https://${registry}", credentialsId: credentials.registryCredentialsId ]) {
                     def image_build = docker.build("${registry}/yamoney/${image}", "-f Dockerfile --pull .")
-                    image_version = "0.${BUILD_NUMBER}"
                     image_build.push(image_version)
                     image_build.push('latest')
                 }
