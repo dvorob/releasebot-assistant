@@ -1,12 +1,12 @@
-## Assistant configuration
+## YMreleaseBot configuration
 
 ymreleasebot:
-  name: 'releasebot-assistant'
+  name: 'xerxes-assistant'
   app_type: 'python'
   app_name: 'ymreleasebot'
   kafka_log_topic: 'yamoney_python_ymreleasebot'
   count_replicas: 1
-  image: 'docker-ym.nexus.yamoney.ru/yamoney/releasebot-assistant'
+  image: 'docker-ym.nexus.yamoney.ru/yamoney/xerxes-assistant'
   tag: <value>
   mysql:
     name: mysql

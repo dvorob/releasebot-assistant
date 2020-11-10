@@ -1,4 +1,4 @@
-{{ $conf := .Values.assistant }}
+{{ $conf := .Values.ymreleasebot }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
