@@ -4,15 +4,15 @@
     Ассистент релизного бота
     запуск джоб по расписанию, статистика и прочее
 """
-import app.config as config
+import config as config
 import json
 import ldap3
 import logging.config
 import re
 import requests
 import warnings
-from app.utils import logging
-from app.utils.database import MysqlPool as db
+from utils import logging
+from utils.database import MysqlPool as db
 from apscheduler.schedulers.background import BlockingScheduler
 from datetime import timedelta, datetime
 from exchangelib import DELEGATE, Configuration, Credentials, Account
