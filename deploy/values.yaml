@@ -1,7 +1,7 @@
 ## YMreleaseBot configuration
 
 ymreleasebot:
-  name: 'xerxes-assistant'
+  name: 'releasebot-assistant'
   app_type: 'python'
   app_name: 'ymreleasebot'
   kafka_log_topic: 'yamoney_python_ymreleasebot'
