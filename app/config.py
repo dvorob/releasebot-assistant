@@ -74,10 +74,10 @@ mysql = PooledMySQLDatabase(
     stale_timeout=300)
 
 #PG configuration
-pg = PooledPostgresqlExtDatabase(
+postgres = PooledPostgresqlExtDatabase(
     'release_bot',
-    user=getenv('secret_pg_user'),
-    passwd=getenv('secret_pg_pass'),
+    user=getenv('secret_postgres_user'),
+    passwd=getenv('secret_postgres_pass'),
     host='ugr-pgtools.yamoney.ru',
     port=8432,
     max_connections=32,
