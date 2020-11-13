@@ -74,7 +74,7 @@ mysql = PooledMySQLDatabase(
     stale_timeout=300)
 
 #PG configuration
-pgdb = PooledPostgresqlExtDatabase(
+pg = PooledPostgresqlExtDatabase(
     'release_bot',
     user=getenv('secret_pg_user'),
     passwd=getenv('secret_pg_pass'),
