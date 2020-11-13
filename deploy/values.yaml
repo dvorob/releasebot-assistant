@@ -31,6 +31,10 @@ ymreleasebot:
       name: 'mysql'
       pass: <value>
       user: <value>
+    pg:
+      name: 'pg'
+      pass: <value>
+      user: <value>
     jira:
       name: 'jira'
       pass: <value>
