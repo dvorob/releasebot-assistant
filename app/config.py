@@ -10,8 +10,6 @@ ex_pass = getenv('secret_exchange_pass')
 ex_cal = 'adminsonduty@yamoney.ru'
 ex_tz = 'Europe/Moscow'
 
-those_who_need_send_statistics = {'dyvorobev': 279933948, 'atampel': 61941403, 'agaidai': 568795685}
-
 jira_host = 'https://jira.yamoney.ru/'
 # через secret задается в кубере
 jira_user = getenv('secret_jira_user')
@@ -60,7 +58,11 @@ api = 'http://xerxes-api-v1/api-v1'
 api_chat_id = f'{api}/chat-id'
 api_aerospike_read = f'{api}/aerospike/read'
 api_aerospike_write = f'{api}/aerospike/write'
-api_tg_send = f'{api}/tg/send'
+
+informer = 'http://ugr-informer1.admsys.yamoney.ru'
+informer_inform_duty_url = f'{informer}/inform_duty'
+informer_send_message_url = f'{informer}/send_message'
+inform_subscribers_url = f'{informer}/inform_subscribers'
 
 #MySQL configuration
 mysql = PooledMySQLDatabase(

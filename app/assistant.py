@@ -99,7 +99,7 @@ def request_telegram_send(telegram_message: dict) -> bool:
         :return: bool value depends on api response
     """
     try:
-        req_tg = requests.post(config.api_tg_send, json=telegram_message)
+        req_tg = requests.post(config.informer_send_message_url, data=json.dumps(telegram_message))
         if req_tg.ok:
             logger.info('Successfully sent message to tg for %s via api',
                         telegram_message['chat_id'])
@@ -136,8 +136,7 @@ def calculate_statistics(jira_con):
         msg += f'\nСегодня было <strong>откачено {len(rollback)}</strong> релизов:\n'
         msg += '\n'.join([f'{issue.key} = {issue.fields.summary}' for issue in rollback])
 
-        telegram_message = {'chat_id': list(config.those_who_need_send_statistics.values()),
-                            'text': msg, 'type': 'html'}
+        telegram_message = {'accounts': ['dyvorobev', 'atampel', 'agaidai'], 'text': msg}
         request_telegram_send(telegram_message)
         logger.info('Statistics:\n %s\n Has been sent to %s', msg,
                     config.those_who_need_send_statistics.keys())
