@@ -137,7 +137,8 @@ def calculate_statistics(jira_con):
         msg += f'\nСегодня было <strong>откачено {len(rollback)}</strong> релизов:\n'
         msg += '\n'.join([f'{issue.key} = {issue.fields.summary}' for issue in rollback])
 
-        telegram_message = {'accounts': ['dyvorobev', 'atampel', 'agaidai'], 'text': msg}
+        #telegram_message = {'accounts': ['dyvorobev', 'atampel', 'agaidai'], 'text': msg}
+        telegram_message = {'accounts': ['dyvorobev'], 'text': msg}
         request_telegram_send(telegram_message)
         logger.info('Statistics:\n %s\n Has been sent to %s', msg,
                     config.those_who_need_send_statistics.keys())
@@ -534,7 +535,7 @@ if __name__ == "__main__":
     scheduler = BlockingScheduler(timezone='Europe/Moscow')
 
     # Сбор статистики
-    scheduler.add_job(lambda: calculate_statistics(jira_connect), 'cron', day_of_week='*', hour=19, minute=0)
+    scheduler.add_job(lambda: calculate_statistics(jira_connect), 'cron', day_of_week='*', hour='*', minute='*/5')
     scheduler.add_job(lambda: statistics_json(jira_connect), 'cron', day_of_week='*', hour=23, minute=50)
 
     # Напоминания о дежурствах
@@ -545,7 +546,7 @@ if __name__ == "__main__":
     scheduler.add_job(lambda: call_who_is_next(jira_connect), 'interval', minutes=1, max_instances=1)
 
     # Проверка, не уволились ли сотрудники. Запускается раз в час
-    scheduler.add_job(get_dismissed_users, 'cron', day_of_week='*', hour='*', minute='45')
+    scheduler.add_job(get_dismissed_users, 'cron', day_of_week='*', hour='*', minute='*/5')
 
     scheduler.add_job(sync_users_from_ad, 'cron', day_of_week='*', hour='*', minute='*/5')
 
