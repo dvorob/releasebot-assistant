@@ -106,11 +106,10 @@ def calculate_statistics(jira_con):
             msg += f'\nСегодня было *откачено {len(rollback)}* релизов:\n'
             msg += '\n'.join([f'{issue.key} = {issue.fields.summary}' for issue in rollback])
 
-            #informer.inform_subscribers('all', msg)
+            informer.inform_subscribers('all', msg)
             # Пока не выделил отдельный тип в подписке - 'subscribers', будет так.
-            informer.send_message_to_users(['gaidai'], msg)
-            logger.info('Statistics:\n %s\n Has been sent to %s', msg,
-                        config.those_who_need_send_statistics.keys())
+            informer.send_message_to_users(['gaidai', 'atampel'], msg)
+            logger.info('Statistics:\n %s\n Has been sent')
         else:
             logger.info('No, today is a holiday, I don\'t want to count statistics')
     except Exception as e:
@@ -502,7 +501,7 @@ if __name__ == "__main__":
     scheduler = BlockingScheduler(timezone='Europe/Moscow')
 
     # Сбор статистики
-    scheduler.add_job(lambda: calculate_statistics(jira_connect), 'cron', day_of_week='*', hour=19, minute=25)
+    scheduler.add_job(lambda: calculate_statistics(jira_connect), 'cron', day_of_week='*', hour=19, minute=00)
     scheduler.add_job(lambda: statistics_json(jira_connect), 'cron', day_of_week='*', hour=23, minute=50)
 
     # Напоминания о дежурствах
