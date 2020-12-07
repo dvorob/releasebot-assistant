@@ -95,15 +95,15 @@ def calculate_statistics(jira_con):
 
         if dict_work_day.get(today):
             returned = jira_con.search_issues(config.jira_filter_returned, maxResults=1000)
-            msg = f'\nСегодня было <strong>возвращено в очередь {len(returned)}</strong> релизов:\n'
+            msg = f'\nСегодня было *возвращено в очередь {len(returned)}* релизов:\n'
             msg += '\n'.join([f'{issue.key} = {issue.fields.summary}' for issue in returned])
 
             resolved = jira_con.search_issues(config.jira_resolved_today, maxResults=1000)
-            msg += f'\nСегодня было <strong>выкачено {len(resolved)}</strong> релизов:\n'
+            msg += f'\nСегодня было *выкачено {len(resolved)}* релизов:\n'
             msg += '\n'.join([f'{issue.key} = {issue.fields.summary}' for issue in resolved])
 
             rollback = jira_con.search_issues(config.jira_rollback_today, maxResults=1000)
-            msg += f'\nСегодня было <strong>откачено {len(rollback)}</strong> релизов:\n'
+            msg += f'\nСегодня было *откачено {len(rollback)}* релизов:\n'
             msg += '\n'.join([f'{issue.key} = {issue.fields.summary}' for issue in rollback])
 
             #telegram_message = {'accounts': ['dyvorobev', 'atampel', 'agaidai'], 'text': msg}
