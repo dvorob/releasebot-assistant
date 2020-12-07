@@ -92,6 +92,7 @@ def send_message_to_users(accounts, message):
     except Exception as e:
         logger.exception('Exception in send message %s', str(e))
 
+
 def request_telegram_send(telegram_message: dict) -> bool:
     """
         Send message to telegram channel
@@ -152,14 +153,14 @@ def get_dismissed_users():
         conn.bind()
         db_users = []
         td = datetime.today() - timedelta(1)
-        db_query = Users.select().where(Users.working_status == 'working',
-            (
-                (Users.date_update < td) |
-                (Users.date_update.is_null())
-             ))
-        for v in db_query:
-            db_users.append((vars(v))['__data__'])
-
+        # db_query = Users.select().where(Users.working_status == 'working',
+        #     (
+        #         (Users.date_update < td) |
+        #         (Users.date_update.is_null())
+        #      ))
+        # for v in db_query:
+        #     db_users.append((vars(v))['__data__'])
+        db_users = db().get_users('working_status', 'working')
         logger.info('Found potential dismissed users in count %s', len(db_users))
 
         for v in db_users:
@@ -201,7 +202,7 @@ def duty_informing_from_schedule(after_days, area, msg):
 
 
 def duty_reminder_daily():
-    msg = 'Крепись, ты сегодня дежуришь.'
+    msg = 'Крепись, ты сегодня дежуришь. С 10:00, если что.'
     duty_informing_from_schedule(1, 'ADMSYS(биллинг)', msg)
     duty_informing_from_schedule(1, 'ADMSYS(портал)', msg)
     duty_informing_from_schedule(1, 'ADMSYS(инфра)', msg)
