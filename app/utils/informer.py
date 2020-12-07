@@ -7,7 +7,6 @@ from utils import logging
 import requests
 import config
 import json
-import utils.jiratools as jiratools
 
 logger = logging.setup()
 
@@ -27,20 +26,6 @@ def inform_duty(areas: list, message: str):
             logger.error('Error in inform duty %s %s ', areas, resp)
     except Exception as e:
         logger.exception('Exception in inform duty %s', str(e))
-
-
-def send_message_to_approvers(issue_key: str, message: str):
-    """
-       (issue_key='ADMSYS-10000', message='Алярма')
-       Отправить сообщение согласующим. Согласующие - те, кто указаны в релизной таске, в виде рабочих аккаунтов.
-       Функции нужно знать номер релиза и сообщение, дальше она сделает все сама. 
-    """
-    try:
-        list_chat_id_recipients = jiratools.jira_get_approvers_list(issue_key)
-        logger.info('-- SEND MESSAGE TO APPROVERS %s %s %s', issue_key, list_chat_id_recipients, message)
-        send_message_to_users(list_chat_id_recipients, message)
-    except Exception as e:
-        logger.exception('Exception in SEND MESSAGE TO APPROVERS %s', e)
 
 
 def send_message_to_users(accounts: list, message: str, disable_notification: bool = True):
