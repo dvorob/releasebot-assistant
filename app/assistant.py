@@ -161,7 +161,7 @@ def get_dismissed_users():
         #      ))
         # for v in db_query:
         #     db_users.append((vars(v))['__data__'])
-        db_users = db().get_users('working_status', 'working')
+        db_users = db().get_users('working_status', 'working', 'equal')
         logger.info('Found potential dismissed users in count %s', len(db_users))
 
         for v in db_users:
