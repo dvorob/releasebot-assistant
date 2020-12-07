@@ -4,15 +4,13 @@
     Ассистент релизного бота
     запуск джоб по расписанию, статистика и прочее
 """
-import config as config
+# External
 import json
 import ldap3
 import logging.config
 import re
 import requests
 import warnings
-from utils import logging
-from utils.database import MysqlPool as db
 from apscheduler.schedulers.background import BlockingScheduler
 from datetime import timedelta, datetime
 from exchangelib import DELEGATE, Configuration, Credentials, Account
@@ -22,6 +20,12 @@ from jira import JIRA
 from ldap3 import Server, Connection, SIMPLE, SYNC, ASYNC, SUBTREE, ALL
 from peewee import *
 from playhouse.pool import PooledMySQLDatabase
+# Internal
+import config as config
+import utils.informer as informer
+from utils import logging
+from utils.database import MysqlPool as db
+
 
 def statistics_json(jira_con):
     """
@@ -77,43 +81,6 @@ def request_write_aerospike(item, bins, aerospike_set):
     return all_return_queue_task
 
 
-def send_message_to_users(accounts, message):
-    """
-        data = {'accounts': ['ymvorobevda'], 'text': 'Работает!'}
-    """
-    logger.info('Send message to users try for %s %s', accounts, message)
-    try:
-        data = {'accounts': accounts, 'text': message}
-        resp = requests.post(config.informer_send_message_url, data=json.dumps(data))
-        if resp.ok:
-            logger.info('Successfully sent message to %s %s %s', accounts, message, resp)
-        else:
-            logger.error('Error in send message for %s %s %s', accounts, message, resp)
-    except Exception as e:
-        logger.exception('Exception in send message %s', str(e))
-
-
-def request_telegram_send(telegram_message: dict) -> bool:
-    """
-        Send message to telegram channel
-        :param: telegram_message - dict with list of chat_id, msg and optional field type
-        :return: bool value depends on api response
-    """
-    try:
-        req_tg = requests.post(config.informer_send_message_url, data=json.dumps(telegram_message))
-        if req_tg.ok:
-            logger.info('Successfully sent message to tg for %s ',
-                        telegram_message['accounts'])
-            feedback = True
-        else:
-            logger.error('Error in request_telegram_send for %s',
-                         telegram_message['accounts'])
-            feedback = False
-        return feedback
-    except Exception as e:
-        logger.exception('-- REQUEST TELEGRAM SEND %s', e)
-
-
 def calculate_statistics(jira_con):
     """
         Considers statistics, format in human readable format
@@ -121,46 +88,45 @@ def calculate_statistics(jira_con):
         :param jira_con: parameters jira connection
         :return: nothing
     """
-    dict_work_day = request_read_aerospike(item='work_day_or_not', aerospike_set='remaster')
-    today = datetime.today().strftime("%Y-%m-%d")
+    logger.info('-- CALCULATE STATISTICS')
+    try:
+        dict_work_day = request_read_aerospike(item='work_day_or_not', aerospike_set='remaster')
+        today = datetime.today().strftime("%Y-%m-%d")
 
-    if dict_work_day.get(today):
-        returned = jira_con.search_issues(config.jira_filter_returned, maxResults=1000)
-        msg = f'\nСегодня было <strong>возвращено в очередь {len(returned)}</strong> релизов:\n'
-        msg += '\n'.join([f'{issue.key} = {issue.fields.summary}' for issue in returned])
+        if dict_work_day.get(today):
+            returned = jira_con.search_issues(config.jira_filter_returned, maxResults=1000)
+            msg = f'\nСегодня было <strong>возвращено в очередь {len(returned)}</strong> релизов:\n'
+            msg += '\n'.join([f'{issue.key} = {issue.fields.summary}' for issue in returned])
 
-        resolved = jira_con.search_issues(config.jira_resolved_today, maxResults=1000)
-        msg += f'\nСегодня было <strong>выкачено {len(resolved)}</strong> релизов:\n'
-        msg += '\n'.join([f'{issue.key} = {issue.fields.summary}' for issue in resolved])
+            resolved = jira_con.search_issues(config.jira_resolved_today, maxResults=1000)
+            msg += f'\nСегодня было <strong>выкачено {len(resolved)}</strong> релизов:\n'
+            msg += '\n'.join([f'{issue.key} = {issue.fields.summary}' for issue in resolved])
 
-        rollback = jira_con.search_issues(config.jira_rollback_today, maxResults=1000)
-        msg += f'\nСегодня было <strong>откачено {len(rollback)}</strong> релизов:\n'
-        msg += '\n'.join([f'{issue.key} = {issue.fields.summary}' for issue in rollback])
+            rollback = jira_con.search_issues(config.jira_rollback_today, maxResults=1000)
+            msg += f'\nСегодня было <strong>откачено {len(rollback)}</strong> релизов:\n'
+            msg += '\n'.join([f'{issue.key} = {issue.fields.summary}' for issue in rollback])
 
-        #telegram_message = {'accounts': ['dyvorobev', 'atampel', 'agaidai'], 'text': msg}
-        telegram_message = {'accounts': ['dyvorobev'], 'text': msg}
-        request_telegram_send(telegram_message)
-        logger.info('Statistics:\n %s\n Has been sent to %s', msg,
-                    config.those_who_need_send_statistics.keys())
-    else:
-        logger.info('No, today is a holiday, I don\'t want to count statistics')
-
+            #telegram_message = {'accounts': ['dyvorobev', 'atampel', 'agaidai'], 'text': msg}
+            informer.send_message_to_users(['ymvorobevda'], msg)
+            logger.info('Statistics:\n %s\n Has been sent to %s', msg,
+                        config.those_who_need_send_statistics.keys())
+        else:
+            logger.info('No, today is a holiday, I don\'t want to count statistics')
+    except Exception as e:
+        logger.exception('Error in CALCULATE STATISTICS %s', e)
 
 def get_dismissed_users():
-    logger.info('start get dismissed users')
+    """
+    Проверяет, не уволился ли пользователь.
+    Берёт всех пользователей из внутренней БД бота. Проверяет каждый account_name на предмет увольнения в AD (учетка попадет в OU="Уволенные...")
+    """
+    logger.info('-- GET DISMISSED USERS')
     try:
         server = Server(config.ad_host)
         conn = Connection(server,user=config.ex_user,password=config.ex_pass)
         conn.bind()
         db_users = []
         td = datetime.today() - timedelta(1)
-        # db_query = Users.select().where(Users.working_status == 'working',
-        #     (
-        #         (Users.date_update < td) |
-        #         (Users.date_update.is_null())
-        #      ))
-        # for v in db_query:
-        #     db_users.append((vars(v))['__data__'])
         db_users = db().get_users('working_status', 'working', 'equal')
         logger.info('Found potential dismissed users in count %s', len(db_users))
 
@@ -173,7 +139,7 @@ def get_dismissed_users():
                 else:
                     logger.info('get dismissed found that %s is still working', v["account_name"])
     except Exception as e:
-        logger.exception('exception in get_users', str(e))
+        logger.exception('Error in GET DISMISSED USERS', str(e))
 
 
 def get_duty_date(date):
@@ -195,7 +161,7 @@ def duty_informing_from_schedule(after_days, area, msg):
         for d in dutymen_array:
             try:
                 logger.info('try to send message to %s %s', d, msg)
-                send_message_to_users([d['account_name']], msg)
+                informer.send_message_to_users([d['account_name']], msg)
             except BotBlocked:
                 logger.info('YM release bot was blocked by %s', d['tg_login'])
             except ChatNotFound:
@@ -333,8 +299,7 @@ def app_version(full_name_app):
 
 def call_who_is_next(jira_con):
     """
-        call to who_is_next
-        :return:
+    УБРАТЬ ОТСЮДА ЦЕЛИКОМ. ЕЙ МЕСТО В REMASTER
     """
     try:
         spiky_data = request_read_aerospike(item='deploy', aerospike_set='remaster')
@@ -374,8 +339,8 @@ def call_who_is_next(jira_con):
                     txt_msg_to_recipients = 'Релиз [%s](%s) будет искать согласующих ' \
                                             'в ближайшие 10-20 минут. Но это не точно.' \
                                             % (finding_issue.fields.summary, finding_issue.permalink())
-                    telegram_message = {'chat_id': recipients, 'text': txt_msg_to_recipients}
-                    request_telegram_send(telegram_message)
+                    #telegram_message = {'chat_id': recipients, 'text': txt_msg_to_recipients}
+                    informer.send_message_to_users(recipients, txt_msg_to_recipients)
         else:
             # Если продолжать нет необходимости, просто спим
             logger.debug('sleeping')
