@@ -102,16 +102,16 @@ def request_telegram_send(telegram_message: dict) -> bool:
     try:
         req_tg = requests.post(config.informer_send_message_url, data=json.dumps(telegram_message))
         if req_tg.ok:
-            logger.info('Successfully sent message to tg for %s via api',
-                        telegram_message['chat_id'])
+            logger.info('Successfully sent message to tg for %s ',
+                        telegram_message['accounts'])
             feedback = True
         else:
             logger.error('Error in request_telegram_send for %s',
-                         telegram_message['chat_id'])
+                         telegram_message['accounts'])
             feedback = False
         return feedback
-    except Exception:
-        logger.exception('request_telegram_send')
+    except Exception as e:
+        logger.exception('-- REQUEST TELEGRAM SEND %s', e)
 
 
 def calculate_statistics(jira_con):
