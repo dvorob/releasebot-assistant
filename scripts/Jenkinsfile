@@ -51,7 +51,7 @@ node('docker') {
                 }
             }
             stage('helm lint') {
-                docker.image(helm_image).inside("-v ${home_dir}/ansible/secret_vars/kube_config.yml:/opt/ymreleasebot/kube_config.yml -v ${home_dir}/ansible/secret_vars/values.yaml:/opt/ymreleasebot/secret_values.yaml -v ${home_dir}/deploy/:/opt/ymreleasebot/ -v ${home_dir}/tag-values.yaml:/opt/ymreleasebot/tag-values.yaml") {
+                docker.image(helm_image).inside("--net=host -v ${home_dir}/ansible/secret_vars/kube_config.yml:/opt/ymreleasebot/kube_config.yml -v ${home_dir}/ansible/secret_vars/values.yaml:/opt/ymreleasebot/secret_values.yaml -v ${home_dir}/deploy/:/opt/ymreleasebot/ -v ${home_dir}/tag-values.yaml:/opt/ymreleasebot/tag-values.yaml") {
                  sh '''
                  cd /opt/ymreleasebot &&
                  helm lint . --kubeconfig /opt/ymreleasebot/kube_config.yml -f values.yaml -f tag-values.yaml -f secret_values.yaml
@@ -59,14 +59,14 @@ node('docker') {
                  }
             }
             stage('verify existence ns') {
-                docker.image(helm_image).inside("-v ${home_dir}/ansible/secret_vars/kube_config.yml:/opt/ymreleasebot/kube_config.yml") {
+                docker.image(helm_image).inside("--net=host -v ${home_dir}/ansible/secret_vars/kube_config.yml:/opt/ymreleasebot/kube_config.yml") {
                 sh '''
                 kubectl --kubeconfig=/opt/ymreleasebot/kube_config.yml get namespace ymreleasebot || kubectl --kubeconfig=/opt/ymreleasebot/kube_config.yml create namespace ymreleasebot
                 '''
                 }
             }
             stage('helm install') {
-                docker.image(helm_image).inside("-v ${home_dir}/ansible/secret_vars/kube_config.yml:/opt/ymreleasebot/kube_config.yml -v ${home_dir}/ansible/secret_vars/values.yaml:/opt/ymreleasebot/secret_values.yaml -v ${home_dir}/deploy/:/opt/ymreleasebot/ -v ${home_dir}/tag-values.yaml:/opt/ymreleasebot/tag-values.yaml") {
+                docker.image(helm_image).inside("--net=host -v ${home_dir}/ansible/secret_vars/kube_config.yml:/opt/ymreleasebot/kube_config.yml -v ${home_dir}/ansible/secret_vars/values.yaml:/opt/ymreleasebot/secret_values.yaml -v ${home_dir}/deploy/:/opt/ymreleasebot/ -v ${home_dir}/tag-values.yaml:/opt/ymreleasebot/tag-values.yaml") {
                  sh '''
                  cd /opt/ymreleasebot &&
                  helm upgrade --install ymreleasebot-assistant . --kubeconfig /opt/ymreleasebot/kube_config.yml -f values.yaml -f tag-values.yaml -f secret_values.yaml --debug -n ymreleasebot

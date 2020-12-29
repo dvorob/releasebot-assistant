@@ -201,7 +201,7 @@ def sync_duties_from_exchange():
         Вызывается по cron-у, следовательно изменения в календаре отразятся в боте
     """
     try:
-        logger.info('sync duties from exchange started!')
+        logger.info('-- SYNC DUTIES FROM EXCHANGE')
         duty_areas = ['ADMSYS', 'NOC', 'ADMWIN', 'IPTEL', 'ADMMSSQL', 'PROCESS', 'DEVOPS', 'TECH', 'INFOSEC', 'ora', 'pg']
 
         # Go to Exchange calendar and get duites for 30 next days
@@ -451,7 +451,7 @@ def sync_users_from_ad():
     """
         Сходить в AD, забрать логины, tg-логины, рабочий статус с преобразованием в (working, dismissed)
     """
-    logger.debug('sync users from ad started')
+    logger.info('-- SYNC USERS FROM AD')
     try:
         server = Server(config.ad_host)
         conn = Connection(server,user=config.ex_user,password=config.ex_pass)
@@ -512,9 +512,9 @@ if __name__ == "__main__":
     scheduler.add_job(lambda: call_who_is_next(jira_connect), 'interval', minutes=1, max_instances=1)
 
     # Проверка, не уволились ли сотрудники. Запускается раз в час
-    scheduler.add_job(get_dismissed_users, 'cron', day_of_week='*', hour='*', minute='*/5')
+    scheduler.add_job(get_dismissed_users, 'cron', day_of_week='*', hour='*', minute='25')
 
-    scheduler.add_job(sync_users_from_ad, 'cron', day_of_week='*', hour='*', minute='*/5')
+    scheduler.add_job(sync_users_from_ad, 'cron', day_of_week='*', hour='*', minute='15')
 
     # Поскольку в 10:00 в календаре присутствует двое дежурных - за вчера и за сегодня, процедура запускается в 5, 25 и 45 минут, чтобы не натыкаться на дубли и не вычищать их
     scheduler.add_job(sync_duties_from_exchange, 'cron', day_of_week='*', hour='*', minute='5-59/20')
