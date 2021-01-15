@@ -123,7 +123,7 @@ def get_dismissed_users():
     """
     logger.info('-- GET DISMISSED USERS')
     try:
-        server = Server(config.ad_host)
+        server = Server(config.ad_host, use_ssl=True)
         conn = Connection(server,user=config.ex_user,password=config.ex_pass)
         conn.bind()
         db_users = []
@@ -267,6 +267,7 @@ def ex_duty(d_start, d_end):
 
     result = ''
     duty_list = []
+    logger.info(f"ex duty {d_start} {d_end}")
     for msg in ex_acc.calendar.view(start=d_start, end=d_end) \
             .only('start', 'end', 'subject') \
             .order_by('start', 'end', 'subject'):
