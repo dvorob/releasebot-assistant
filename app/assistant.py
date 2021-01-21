@@ -124,7 +124,7 @@ def get_dismissed_users():
     logger.info('-- GET DISMISSED USERS')
     try:
         server = Server(config.ad_host, use_ssl=True)
-        conn = Connection(server,user=config.ex_user,password=config.ex_pass)
+        conn = Connection(server, user=config.ex_user, password=config.ex_pass)
         conn.bind()
         db_users = []
         td = datetime.today() - timedelta(1)
@@ -454,13 +454,14 @@ def sync_users_from_ad():
     """
     logger.info('-- SYNC USERS FROM AD')
     try:
-        server = Server(config.ad_host)
-        conn = Connection(server,user=config.ex_user,password=config.ex_pass)
+        server = Server(config.ad_host, use_ssl=True)
+        conn = Connection(server, user=config.ex_user, password=config.ex_pass)
         conn.bind()
-        conn.search(config.base_dn,config.ldap_filter,SUBTREE,attributes=config.ldap_attrs)
+        conn.search(config.base_dn, config.ldap_filter, SUBTREE, attributes=config.ldap_attrs)
         users_dict = {}
-    except Exception:
-        logger.exception('exception in get_ad_users')
+    except Exception as e:
+        logger.exception('exception in sync users from ad with connection %s', e)
+        return e
 
     for entry in conn.entries:
         logger.debug('Sync users from ad entry %s', entry)
