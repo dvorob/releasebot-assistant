@@ -76,8 +76,8 @@ inform_subscribers_url = f'{informer}/inform_subscribers'
 #PG configuration
 postgres = PostgresqlDatabase(
     'release_bot',
-    user=getenv('secret_postgres_user'),
-    password=getenv('secret_postgres_pass'),
+    user=getenv('secret_postgres_user').rstrip(),
+    password=getenv('secret_postgres_pass').rstrip(),
     host='ugr-pgtools2.yamoney.ru',
     port=7432)
     # max_connections=32,
