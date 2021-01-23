@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from os import getenv
-from playhouse.pool import PooledMySQLDatabase, PooledPostgresqlExtDatabase
+from playhouse.pool import PooledPostgresqlExtDatabase
 
 ex_host = 'mail-mx10.yamoney.ru'
 ex_user = getenv('secret_exchange_user')
@@ -65,23 +65,23 @@ informer_send_message_url = f'{informer}/send_message'
 inform_subscribers_url = f'{informer}/inform_subscribers'
 
 #MySQL configuration
-mysql = PooledMySQLDatabase(
-    'xerxes',
-    host='mysql.xerxes.svc.ugr-base1.kube.yamoney.ru',
-    user=getenv('secret_mysql_user'),
-    passwd=getenv('secret_mysql_pass'),
-    max_connections=8,
-    stale_timeout=300)
+# mysql = PooledMySQLDatabase(
+#     'xerxes',
+#     host='mysql.xerxes.svc.ugr-base1.kube.yamoney.ru',
+#     user=getenv('secret_mysql_user'),
+#     passwd=getenv('secret_mysql_pass'),
+#     max_connections=8,
+#     stale_timeout=300)
 
 #PG configuration
-# postgres = PooledPostgresqlExtDatabase(
-#     'release_bot',
-#     user=getenv('secret_postgres_user'),
-#     passwd=getenv('secret_postgres_pass'),
-#     host='ugr-pgtools.yamoney.ru',
-#     port=8432,
-#     max_connections=32,
-#     stale_timeout=300)
+postgres = PooledPostgresqlExtDatabase(
+    'release_bot',
+    user=getenv('secret_postgres_user'),
+    passwd=getenv('secret_postgres_pass'),
+    host='ugr-pgtools2.yamoney.ru',
+    port=7432,
+    max_connections=32,
+    stale_timeout=300)
 
 # AD configuration
 ad_host = 'ldaps.yamoney.ru'

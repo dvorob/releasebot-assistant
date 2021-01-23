@@ -11,11 +11,11 @@ from peewee import *
 
 logger = logging.setup()
 
-__all__ = ['MysqlPool']
+__all__ = ['PostgresPool']
 
 class BaseModel(Model):
     class Meta:
-        database = config.mysql
+        database = config.postgres
 
 class Users(BaseModel):
     id = IntegerField()
@@ -43,9 +43,9 @@ class Duty_List(BaseModel):
             (('duty_list', 'area'), True)
         )
 
-class MysqlPool:
+class PostgresPool:
     def __init__(self):
-        self.db = config.mysql
+        self.db = config.postgres
 
     def set_users(self, account_name, full_name, tg_login, working_status, email):
         # Записать пользователя в таблицу Users. Переберет параметры и запишет только те из них, что заданы. 
