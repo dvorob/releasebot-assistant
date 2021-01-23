@@ -494,7 +494,7 @@ if __name__ == "__main__":
     warnings.filterwarnings('ignore')
     logger = logging.setup()
     logger.info('- - - START ASSISTANT - - - ')
-    dbbb = db().db_get_users('account_name', 'ymvorobevda', 'equal')
+    dbbb = db().get_users('account_name', 'ymvorobevda', 'equal')
     logger.info(dbbb)
     jira_connect = JIRA(config.jira_options, basic_auth=(config.jira_user, config.jira_pass))
 
