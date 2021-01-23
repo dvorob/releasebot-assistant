@@ -19,12 +19,11 @@ from exchangelib.protocol import BaseProtocol, NoVerifyHTTPAdapter
 from jira import JIRA
 from ldap3 import Server, Connection, SIMPLE, SYNC, ASYNC, SUBTREE, ALL
 from peewee import *
-from playhouse.pool import PooledMySQLDatabase
 # Internal
 import config as config
 import utils.informer as informer
 from utils import logging
-from utils.database import MysqlPool as db
+from utils.database import PostgresPool as db
 
 
 def statistics_json(jira_con):
