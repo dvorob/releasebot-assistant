@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from os import getenv
-from playhouse.pool import PooledPostgresqlExtDatabase
+from playhouse.pool import PooledMySQLDatabase, PooledPostgresqlExtDatabase
 
 ex_host = 'mail-mx10.yamoney.ru'
 ex_user = getenv('secret_exchange_user')
@@ -74,14 +74,14 @@ inform_subscribers_url = f'{informer}/inform_subscribers'
 #     stale_timeout=300)
 
 #PG configuration
-postgres = PooledPostgresqlExtDatabase(
+postgres = PostgresqlDatabase(
     'release_bot',
     user=getenv('secret_postgres_user'),
-    passwd=getenv('secret_postgres_pass'),
+    password=getenv('secret_postgres_pass'),
     host='ugr-pgtools2.yamoney.ru',
-    port=7432,
-    max_connections=32,
-    stale_timeout=300)
+    port=7432)
+    # max_connections=32,
+    # stale_timeout=300)
 
 # AD configuration
 ad_host = 'ldaps.yamoney.ru'
