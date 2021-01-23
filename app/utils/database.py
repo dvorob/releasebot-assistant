@@ -15,7 +15,6 @@ __all__ = ['PostgresPool']
 
 class BaseModel(Model):
     class Meta:
-        logger.info(config.postgres)
         database = config.postgres
 
 class Users(BaseModel):

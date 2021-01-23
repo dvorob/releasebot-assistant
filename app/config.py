@@ -74,14 +74,14 @@ inform_subscribers_url = f'{informer}/inform_subscribers'
 #     stale_timeout=300)
 
 #PG configuration
-postgres = PostgresqlDatabase(
+postgres = PooledPostgresqlDatabase(
     'release_bot',
     user=getenv('secret_postgres_user').rstrip(),
     password=getenv('secret_postgres_pass').rstrip(),
     host='ugr-pgtools2.yamoney.ru',
-    port=7432)
-    # max_connections=32,
-    # stale_timeout=300)
+    port=7432,
+    max_connections=32,
+    stale_timeout=300)
 
 # AD configuration
 ad_host = 'ldaps.yamoney.ru'
