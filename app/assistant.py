@@ -494,7 +494,8 @@ if __name__ == "__main__":
     warnings.filterwarnings('ignore')
     logger = logging.setup()
     logger.info('- - - START ASSISTANT - - - ')
-
+    dbbb = db_get_users('account_name', 'ymvorobevda', 'equal')
+    logger.info(dbbb)
     jira_connect = JIRA(config.jira_options, basic_auth=(config.jira_user, config.jira_pass))
 
     # --- SCHEDULING ---
@@ -511,14 +512,14 @@ if __name__ == "__main__":
 
     # Who is next?
     scheduler.add_job(lambda: call_who_is_next(jira_connect), 'interval', minutes=1, max_instances=1)
-
+    
     # Проверка, не уволились ли сотрудники. Запускается раз в час
-    scheduler.add_job(get_dismissed_users, 'cron', day_of_week='*', hour='*', minute='25')
+    # scheduler.add_job(get_dismissed_users, 'cron', day_of_week='*', hour='*', minute='25')
 
-    scheduler.add_job(sync_users_from_ad, 'cron', day_of_week='*', hour='*', minute='15')
+    # scheduler.add_job(sync_users_from_ad, 'cron', day_of_week='*', hour='*', minute='15')
 
-    # Поскольку в 10:00 в календаре присутствует двое дежурных - за вчера и за сегодня, процедура запускается в 5, 25 и 45 минут, чтобы не натыкаться на дубли и не вычищать их
-    scheduler.add_job(sync_duties_from_exchange, 'cron', day_of_week='*', hour='*', minute='5-59/20')
+    # # Поскольку в 10:00 в календаре присутствует двое дежурных - за вчера и за сегодня, процедура запускается в 5, 25 и 45 минут, чтобы не натыкаться на дубли и не вычищать их
+    # scheduler.add_job(sync_duties_from_exchange, 'cron', day_of_week='*', hour='*', minute='5-59/20')
 
     # Запускаем расписание
     scheduler.start()

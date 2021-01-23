@@ -45,6 +45,7 @@ class Duty_List(BaseModel):
 
 class PostgresPool:
     def __init__(self):
+        logger.info(config.postgres)
         self.db = config.postgres
 
     def set_users(self, account_name, full_name, tg_login, working_status, email):
