@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from os import getenv
-from playhouse.pool import PooledMySQLDatabase, PooledPostgresqlExtDatabase
+from playhouse.pool import PostgresqlDatabase, PooledPostgresqlDatabase
 
 ex_host = 'mail-mx10.yamoney.ru'
 ex_user = getenv('secret_exchange_user')
