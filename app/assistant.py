@@ -228,8 +228,7 @@ def sync_duties_from_exchange():
             old_msg, new_msg = ex_duty(cal_start, cal_end)
             msg += old_msg
 
-            logger.info('I find duty for %s', duty_date.strftime("%Y-%m-%d"))
-            logger.info('Duty list %s', msg)
+            logger.info('I find duty for %s : %s', duty_date.strftime("%Y-%m-%d"), msg)
             # Разобрать сообщение из календаря в формат ["area (зона ответственности)", "имя дежурного", "аккаунт деужурного"]
             duty_list = []
             for msg in new_msg:
@@ -246,7 +245,7 @@ def sync_duties_from_exchange():
                                 if len(search_duty_name) == 1:
                                     dl["account_name"] = search_duty_name[0]["account_name"]
                                     dl["tg_login"] = search_duty_name[0]["tg_login"]
-                logger.info('duty %s',dl)
+                logger.debug('Duty result %s',dl)
                 db().set_dutylist(dl)
 
     except Exception as e:
@@ -518,7 +517,7 @@ if __name__ == "__main__":
     # Напоминания о дежурствах
     scheduler.add_job(duty_reminder_daily, 'cron', day_of_week='*',  hour=9, minute=45)
     scheduler.add_job(duty_reminder_weekend, 'cron', day_of_week='fri', hour=14, minute=1)
-    scheduler.add_job(duty_reminder_tststnd_daily, 'cron', day_of_week='*', hour=17, minute=20)
+    scheduler.add_job(duty_reminder_tststnd_daily, 'cron', day_of_week='*', hour=17, minute=43)
 
     # Who is next?
     scheduler.add_job(lambda: call_who_is_next(jira_connect), 'interval', minutes=1, max_instances=1)
