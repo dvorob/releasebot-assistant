@@ -199,8 +199,8 @@ def duty_reminder_tststnd_daily():
         Уведомления дежурных по стендам
     """
     msg = 'Будь сильным: ты дежуришь по стендам. Проверь, что:'
-    duty_informing_from_schedule(-1, 'ADMSYS(стенды)', msg)
-    duty_informing_from_schedule(-1, 'ADMSYS(стенды2)', msg)
+    duty_informing_from_schedule(0, 'ADMSYS(стенды)', msg)
+    duty_informing_from_schedule(0, 'ADMSYS(стенды2)', msg)
 
 
 def sync_duties_from_exchange():
@@ -517,7 +517,7 @@ if __name__ == "__main__":
     # Напоминания о дежурствах
     scheduler.add_job(duty_reminder_daily, 'cron', day_of_week='*',  hour=9, minute=45)
     scheduler.add_job(duty_reminder_weekend, 'cron', day_of_week='fri', hour=14, minute=1)
-    scheduler.add_job(duty_reminder_tststnd_daily, 'cron', day_of_week='*', hour=17, minute=53)
+    scheduler.add_job(duty_reminder_tststnd_daily, 'cron', day_of_week='*', hour=18, minute=0)
 
     # Who is next?
     scheduler.add_job(lambda: call_who_is_next(jira_connect), 'interval', minutes=1, max_instances=1)
