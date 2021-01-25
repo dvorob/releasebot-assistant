@@ -246,7 +246,7 @@ def sync_duties_from_exchange():
                                 if len(search_duty_name) == 1:
                                     dl["account_name"] = search_duty_name[0]["account_name"]
                                     dl["tg_login"] = search_duty_name[0]["tg_login"]
-                logger.debug('duty %s',dl)
+                logger.info('duty %s',dl)
                 db().set_dutylist(dl)
 
     except Exception as e:
@@ -276,7 +276,7 @@ def ex_duty(d_start, d_end):
 
     result = ''
     duty_list = []
-    logger.info(f"ex duty {d_start} {d_end}")
+    logger.debug(f"ex duty {d_start} {d_end}")
     for msg in ex_acc.calendar.view(start=d_start, end=d_end) \
             .only('start', 'end', 'subject') \
             .order_by('start', 'end', 'subject'):
