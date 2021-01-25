@@ -26,32 +26,6 @@ from utils import logging
 from utils.database import PostgresPool as db
 
 
-def statistics_json(jira_con):
-    """
-        Considers statistics, format in json
-        and set to aerospike, item=dict_day_statistics, set=statistics
-        :param jira_con: parameters jira connection
-        :return: nothing
-    """
-    today = datetime.today().strftime("%Y-%m-%d")
-    returned = jira_con.search_issues(config.jira_filter_returned, maxResults=1000)
-    resolved = jira_con.search_issues(config.jira_resolved_today, maxResults=1000)
-    rollback = jira_con.search_issues(config.jira_rollback_today, maxResults=1000)
-
-    msg = {today: {'count_returned_to_queue': len(returned),
-                   'count_rollback': len(rollback),
-                   'count_resolved': len(resolved),
-                   'rollback_tasks': {issue.key: issue.fields.summary for issue in rollback},
-                   'resolved_tasks': {issue.key: issue.fields.summary for issue in resolved},
-                   'returned_to_queue': {issue.key: issue.fields.summary for issue in returned}
-                   }
-           }
-
-    request_write_aerospike(item='dict_day_statistics', aerospike_set='statistics', bins=msg)
-    logger.info('Right now i calculate statistics and set to aerospike, '
-                'item=dict_day_statistics, aerospike_set=statistics')
-
-
 def request_read_aerospike(item, aerospike_set):
     """
         Read from aerospike via api-v1
@@ -198,7 +172,7 @@ def duty_reminder_tststnd_daily():
     """
         Уведомления дежурных по стендам
     """
-    msg = 'Будь сильным: ты дежуришь по стендам. Проверь, что:'
+    msg = 'Будь сильным: ты дежуришь по стендам сегодня. Проверь, что:'
     duty_informing_from_schedule(0, 'ADMSYS(стенды)', msg)
     duty_informing_from_schedule(0, 'ADMSYS(стенды2)', msg)
 
@@ -312,14 +286,14 @@ def call_who_is_next(jira_con):
     УБРАТЬ ОТСЮДА ЦЕЛИКОМ. ЕЙ МЕСТО В REMASTER
     """
     try:
-        spiky_data = request_read_aerospike(item='deploy', aerospike_set='remaster')
-        logger.debug('Remaster: spiky_data = %s', spiky_data)
+        run_mode = db().get_parameters('run_mode')[0]['value']
+        logger.debug('Remaster: run_mode = %s', run_mode)
 
-        if not spiky_data:
-            spiky_data = {'run': 0}
+        if not run_mode:
+            run_mode = 'off'
             # 0 - спать, 1 - доделывать, 2 - штатный режим
 
-        if spiky_data['run'] == 2:
+        if run_mode == 'on':
             name_task_will_release_next = who_is_next(jira_con)
             if not name_task_will_release_next:
                 logger.error('I can\'t find task_will_release_next')
@@ -512,7 +486,6 @@ if __name__ == "__main__":
 
     # Сбор статистики
     scheduler.add_job(lambda: calculate_statistics(jira_connect), 'cron', day_of_week='*', hour=19, minute=00)
-    scheduler.add_job(lambda: statistics_json(jira_connect), 'cron', day_of_week='*', hour=23, minute=50)
 
     # Напоминания о дежурствах
     scheduler.add_job(duty_reminder_daily, 'cron', day_of_week='*',  hour=9, minute=45)
