@@ -150,6 +150,7 @@ def get_duty_date(date):
     else:
         return date
 
+
 def duty_informing_from_schedule(after_days, area, msg):
     """
         Отправить уведомление дежурным на заданную дату, вычисляемую по отступу от текущей
@@ -191,6 +192,15 @@ def duty_reminder_weekend():
     duty_informing_from_schedule(2, 'ADMSYS(биллинг)', msg)
     duty_informing_from_schedule(2, 'ADMSYS(портал)', msg)
     duty_informing_from_schedule(2, 'ADMSYS(инфра)', msg)
+
+
+def duty_reminder_tststnd_daily():
+    """
+        Уведомления дежурных по стендам
+    """
+    msg = 'Будь сильным: ты дежуришь по стендам. Проверь, что:'
+    duty_informing_from_schedule(1, 'ADMSYS(стенды)', msg)
+    duty_informing_from_schedule(1, 'ADMSYS(стенды2)', msg)
 
 
 def sync_duties_from_exchange():
@@ -483,7 +493,7 @@ def sync_users_from_ad():
         for k, v in users_dict.items():
             logger.debug('Sync users from ad users_dict %s', v)
             db().set_users(v['account_name'], v['full_name'], v['tg_login'], v['working_status'], v['email'])
-        logger.info('Mysql: Users saving is completed')
+        logger.info('DB: Users saving is completed')
     except Exception as e:
         logger.exception('exception in sync users from ad %s', str(e))
 
@@ -508,6 +518,7 @@ if __name__ == "__main__":
     # Напоминания о дежурствах
     scheduler.add_job(duty_reminder_daily, 'cron', day_of_week='*',  hour=9, minute=45)
     scheduler.add_job(duty_reminder_weekend, 'cron', day_of_week='fri', hour=14, minute=1)
+    scheduler.add_job(duty_reminder_tststnd_daily, 'cron', day_of_week='*', hour=17, minute=20)
 
     # Who is next?
     scheduler.add_job(lambda: call_who_is_next(jira_connect), 'interval', minutes=1, max_instances=1)

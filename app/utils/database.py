@@ -1,7 +1,7 @@
 #!/usr/bin/env python3.8
 # -*- coding: utf-8 -*-
 """
-Input/output for mysql
+Работа с БД в PostgreSQL
 """
 import config
 import re
@@ -18,7 +18,7 @@ class BaseModel(Model):
         database = config.postgres
 
 class Users(BaseModel):
-    id = IntegerField()
+    id = IntegerField(primary_key=True)
     account_name = CharField(unique=True)
     full_name = CharField()
     tg_login = CharField()
@@ -27,7 +27,7 @@ class Users(BaseModel):
     email = CharField()
     notification = CharField(default='none')
     admin = IntegerField(default=0)
-    date_update = DateTimeField()
+    date_update = TimestampField()
 
 class Duty_List(BaseModel):
     id = IntegerField()
