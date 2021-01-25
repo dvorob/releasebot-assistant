@@ -43,6 +43,12 @@ class Duty_List(BaseModel):
             (('duty_list', 'area'), True)
         )
 
+class Parameters(BaseModel):
+    id = IntegerField(index=True)
+    name = CharField()
+    value = CharField()
+    description = CharField()
+
 class PostgresPool:
     def __init__(self):
         self.db = config.postgres
@@ -146,5 +152,34 @@ class PostgresPool:
         except Exception as e:
             logger.exception('exception in get user by fullname %s', str(e))
             return result
+        finally:
+            self.db.close()
+
+    def get_parameters(self, name) -> list:
+        # Сходить в parameters
+        logger.debug('get parameters %s ', name)
+        try:
+            self.db.connect(reuse_if_open=True)
+            result = []
+            db_query = Parameters.select().where(Parameters.name == name)
+            for v in db_query:
+                result.append((vars(v))['__data__'])
+            logger.debug('get parameters for %s %s', name, result)
+            return result
+        except Exception as e:
+            logger.exception('exception in get parameters %s', e)
+        finally:
+            self.db.close()
+
+    def set_parameters(self, name, value):
+        # Записать в parameters
+        logger.info('set parameters %s %s ', name, value)
+        try:
+            self.db.connect(reuse_if_open=True)
+            db_rec, _ = Parameters.get_or_create(name=name)
+            db_rec.value = value
+            db_rec.save()
+        except Exception as e:
+            logger.exception('exception in set parameters %s', e)
         finally:
             self.db.close()
