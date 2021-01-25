@@ -517,7 +517,7 @@ if __name__ == "__main__":
     # Напоминания о дежурствах
     scheduler.add_job(duty_reminder_daily, 'cron', day_of_week='*',  hour=9, minute=45)
     scheduler.add_job(duty_reminder_weekend, 'cron', day_of_week='fri', hour=14, minute=1)
-    scheduler.add_job(duty_reminder_tststnd_daily, 'cron', day_of_week='*', hour=18, minute=0)
+    scheduler.add_job(duty_reminder_tststnd_daily, 'cron', day_of_week='*', hour=18, minute=7)
 
     # Who is next?
     scheduler.add_job(lambda: call_who_is_next(jira_connect), 'interval', minutes=1, max_instances=1)
