@@ -157,7 +157,7 @@ def duty_informing_from_schedule(after_days, area, msg):
     """
     duty_date = get_duty_date(datetime.today()) + timedelta(after_days)
     dutymen_array = db().get_duty_in_area(duty_date, area)
-    logger.info('dutymen_array %s', dutymen_array)
+    logger.info(f'Duty informing from schedule {after_days} {area} {msg} {dutymen_array}')
     if len(dutymen_array) > 0:
         for d in dutymen_array:
             try:
@@ -199,8 +199,8 @@ def duty_reminder_tststnd_daily():
         Уведомления дежурных по стендам
     """
     msg = 'Будь сильным: ты дежуришь по стендам. Проверь, что:'
-    duty_informing_from_schedule(1, 'ADMSYS(стенды)', msg)
-    duty_informing_from_schedule(1, 'ADMSYS(стенды2)', msg)
+    duty_informing_from_schedule(-1, 'ADMSYS(стенды)', msg)
+    duty_informing_from_schedule(-1, 'ADMSYS(стенды2)', msg)
 
 
 def sync_duties_from_exchange():
@@ -517,7 +517,7 @@ if __name__ == "__main__":
     # Напоминания о дежурствах
     scheduler.add_job(duty_reminder_daily, 'cron', day_of_week='*',  hour=9, minute=45)
     scheduler.add_job(duty_reminder_weekend, 'cron', day_of_week='fri', hour=14, minute=1)
-    scheduler.add_job(duty_reminder_tststnd_daily, 'cron', day_of_week='*', hour=17, minute=43)
+    scheduler.add_job(duty_reminder_tststnd_daily, 'cron', day_of_week='*', hour=17, minute=53)
 
     # Who is next?
     scheduler.add_job(lambda: call_who_is_next(jira_connect), 'interval', minutes=1, max_instances=1)
