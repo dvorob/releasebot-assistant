@@ -172,9 +172,14 @@ def duty_reminder_tststnd_daily():
     """
         Уведомления дежурных по стендам
     """
-    msg = 'Будь сильным: ты дежуришь по стендам сегодня. Проверь, что:'
+    msg = f"Будь сильным: ты дежуришь по стендам сегодня. Проверь, что: \n" \
+       f"1.  Автообновление int* прошло успешно ([здесь](https://jira.yamoney.ru/issues/?jql=labels%20%3D%20jenkins.SchemeUpdate%20and%20status%20not%20in%20(Closed%2CResolved)) " \
+       f"нет задач). Перезапусти обновление, если оно не прошло. \n" \
+       f"2.  Ночные синки успешны ([здесь](https://jira.yamoney.ru/issues/?jql=labels%20%3D%20cloud%20and%20status%20not%20in%20(Closed%2CResolved)) нет задач). \n" \
+       f"Днем проверь как [пересоздалась btest](https://jenkins-dev.yamoney.ru/job/CLOUD/job/Base/job/recreate_basetest/). Важно дотолкать ее до тестов, чтобы QA было что разбирать. \n" \
+       f"Если в результате чекапа есть повторяющиеся проблемы – делаем задачи на плановую починку."
+
     duty_informing_from_schedule(0, 'ADMSYS(стенды)', msg)
-    duty_informing_from_schedule(0, 'ADMSYS(стенды2)', msg)
 
 
 def sync_duties_from_exchange():
@@ -490,7 +495,7 @@ if __name__ == "__main__":
     # Напоминания о дежурствах
     scheduler.add_job(duty_reminder_daily, 'cron', day_of_week='*',  hour=9, minute=45)
     scheduler.add_job(duty_reminder_weekend, 'cron', day_of_week='fri', hour=14, minute=1)
-    scheduler.add_job(duty_reminder_tststnd_daily, 'cron', day_of_week='*', hour=18, minute=7)
+    scheduler.add_job(duty_reminder_tststnd_daily, 'cron', day_of_week='*', hour=14, minute=58)
 
     # Who is next?
     scheduler.add_job(lambda: call_who_is_next(jira_connect), 'interval', minutes=1, max_instances=1)
