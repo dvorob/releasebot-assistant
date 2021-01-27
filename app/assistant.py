@@ -143,17 +143,21 @@ def duty_informing_from_schedule(after_days, area, msg):
                 logger.error('Chat not found with: %s', d['tg_login'])
 
 
-def duty_reminder_daily():
+def duty_reminder_daily_morning():
     msg = 'Крепись, ты сегодня дежуришь. С 10:00, если что.'
     duty_informing_from_schedule(1, 'ADMSYS(биллинг)', msg)
     duty_informing_from_schedule(1, 'ADMSYS(портал)', msg)
     duty_informing_from_schedule(1, 'ADMSYS(инфра)', msg)
 
+def duty_reminder_daily_evening():
+    msg = 'Напоминаю, ты *завтра* дежуришь по проду. Будь готов :)'
+    duty_informing_from_schedule(1, 'ADMSYS(биллинг)', msg)
+    duty_informing_from_schedule(1, 'ADMSYS(портал)', msg)
+    duty_informing_from_schedule(1, 'ADMSYS(инфра)', msg)
 
 def duty_reminder_weekend():
     """
         Send message to admin, who will duty on weekend
-        :return: nothing
     """
     logger.info('duty reminder weekend started')
     # Субботние дежурные
@@ -181,7 +185,6 @@ def duty_reminder_tststnd_daily():
        f"Если в результате чекапа есть повторяющиеся проблемы – сделай задачи на плановую починку."
 
     duty_informing_from_schedule(0, 'ADMSYS(стенды)', msg)
-
 
 def sync_duties_from_exchange():
     """
@@ -494,7 +497,8 @@ if __name__ == "__main__":
     scheduler.add_job(lambda: calculate_statistics(jira_connect), 'cron', day_of_week='*', hour=19, minute=00)
 
     # Напоминания о дежурствах
-    scheduler.add_job(duty_reminder_daily, 'cron', day_of_week='*',  hour=9, minute=45)
+    scheduler.add_job(duty_reminder_daily_morning, 'cron', day_of_week='*',  hour=9, minute=45)
+    scheduler.add_job(duty_reminder_daily_evening, 'cron', day_of_week='1-4',  hour=18, minute=30)
     scheduler.add_job(duty_reminder_weekend, 'cron', day_of_week='fri', hour=14, minute=1)
     scheduler.add_job(duty_reminder_tststnd_daily, 'cron', day_of_week='*', hour=10, minute=00)
 
