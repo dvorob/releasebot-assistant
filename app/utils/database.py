@@ -20,17 +20,14 @@ class BaseModel(Model):
     class Meta:
         database = config.postgres
 
-class Users(BaseModel):
-    id = IntegerField(primary_key=True)
-    account_name = CharField(unique=True)
-    full_name = CharField()
-    tg_login = CharField()
+class Chats(BaseModel):
+    id = IntegerField()
     tg_id = CharField()
-    working_status = CharField()
-    email = CharField()
+    title = CharField()
+    started_by = CharField()
+    date_start = TimestampField(default=datetime.now)
     notification = CharField(default='none')
-    admin = IntegerField(default=0)
-    date_update = TimestampField()
+    description = CharField()
 
 class Duty_List(BaseModel):
     id = IntegerField()
@@ -46,68 +43,51 @@ class Duty_List(BaseModel):
             (('duty_list', 'area'), True)
         )
 
+class Option(BaseModel):
+    name = CharField(unique=True)
+    value = CharField()
+
 class Parameters(BaseModel):
     id = IntegerField(index=True)
     name = CharField()
     value = CharField()
     description = CharField()
 
+class Releases_List(BaseModel):
+    id = IntegerField(primary_key=True)
+    jira_task = CharField(unique=True)
+    app_name = CharField(default=None)
+    app_version = CharField(default=None)
+    fullname = CharField(default=None)
+    date_create = DateField(default=None)
+    date_update = DateField(default=None)
+    resolution = CharField(default=None)
+    is_rollbacked = BooleanField(default=None)
+    notifications_sent = TextField(default=None)
+
+class Users(BaseModel):
+    id = IntegerField(primary_key=True)
+    account_name = CharField(unique=True)
+    full_name = CharField()
+    tg_login = CharField()
+    tg_id = CharField()
+    working_status = CharField()
+    email = CharField()
+    notification = CharField(default='none')
+    admin = IntegerField(default=0)
+    date_update = TimestampField()
+
+class Workdays_List(BaseModel):
+    ddate = DateField(primary_key=True)
+    is_workday = IntegerField()
+
 class PostgresPool:
+
     def __init__(self):
         self.db = config.postgres
 
-    def set_users(self, account_name, full_name, tg_login, working_status, email):
-        # Записать пользователя в таблицу Users. Переберет параметры и запишет только те из них, что заданы. 
-        # Иными словами, если вычитали пользователя из AD с полным набором полей, запись будет создана, поля заполнены.
-        # Если передадим tg_id для существующего пользователя, заполнится только это поле
-        logger.debug('set users started for %s ', account_name)
-        try:
-            self.db.connect(reuse_if_open=True)
-            db_users, _ = Users.get_or_create(account_name=account_name)
-            if full_name:
-                db_users.full_name = full_name
-            if tg_login:
-                db_users.tg_login = tg_login
-            if working_status:
-                db_users.working_status = working_status
-            if email:
-                db_users.email = email
-            db_users.date_update = datetime.now()
-            db_users.save()
-        except Exception as e:
-            logger.exception('exception in set_users %s', str(e))
-        finally:
-            self.db.close()
-
-
-    def set_dutylist(self, dl):
-        try:
-            self.db.connect(reuse_if_open=True)
-            db_duty, _ = Duty_List.get_or_create(duty_date=dl['duty_date'], area=dl['area'])
-            db_duty.full_name = dl['full_name']
-            db_duty.account_name = dl['account_name']
-            db_duty.full_text = dl['full_text']
-            db_duty.tg_login = dl['tg_login']
-            db_duty.save()
-        except Exception as e:
-            logger.exception('error in set dutylist %s', str(e))
-        finally:
-            self.db.close()
-
-    def get_duty_in_area(self, duty_date, area) -> list:
-        # Сходить в таблицу xerxes.duty_list за дежурными на заданную дату и зону ответственности
-        try:
-            self.db.connect(reuse_if_open=True)
-            result = []
-            db_query = Duty_List.select().where(Duty_List.duty_date == duty_date, Duty_List.area == area)
-            for v in db_query:
-                result.append((vars(v))['__data__'])
-            logger.info('get duty for %s %s %s', duty_date, area, result)
-            return result
-        except Exception as e:
-            logger.exception('exception in db get duty in area %s', str(e))
-        finally:
-            self.db.close()
+    # ---------------------------------
+    # ----- Users ---------------------
 
     def get_users(self, field, value, operation) -> list:
         # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
@@ -131,7 +111,6 @@ class PostgresPool:
             return result
         finally:
             self.db.close()
-
 
     def get_user_by_fullname(self, value) -> list:
         # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
@@ -157,6 +136,32 @@ class PostgresPool:
             return result
         finally:
             self.db.close()
+
+    def set_users(self, account_name, full_name, tg_login, working_status, email):
+        # Записать пользователя в таблицу Users. Переберет параметры и запишет только те из них, что заданы. 
+        # Иными словами, если вычитали пользователя из AD с полным набором полей, запись будет создана, поля заполнены.
+        # Если передадим tg_id для существующего пользователя, заполнится только это поле
+        logger.debug('set users started for %s ', account_name)
+        try:
+            self.db.connect(reuse_if_open=True)
+            db_users, _ = Users.get_or_create(account_name=account_name)
+            if full_name:
+                db_users.full_name = full_name
+            if tg_login:
+                db_users.tg_login = tg_login
+            if working_status:
+                db_users.working_status = working_status
+            if email:
+                db_users.email = email
+            db_users.date_update = datetime.now()
+            db_users.save()
+        except Exception as e:
+            logger.exception('exception in set_users %s', str(e))
+        finally:
+            self.db.close()
+
+    # ---------------------------------
+    # ----- Parameters ----------------
 
     def get_parameters(self, name) -> list:
         # Сходить в parameters
@@ -184,5 +189,168 @@ class PostgresPool:
             db_rec.save()
         except Exception as e:
             logger.exception('exception in set parameters %s', e)
+        finally:
+            self.db.close()
+
+    # ---------------------------------
+    # ----- DutyList ------------------
+
+    def get_duty_in_area(self, duty_date, area) -> list:
+        # Сходить в таблицу xerxes.duty_list за дежурными на заданную дату и зону ответственности
+        try:
+            self.db.connect(reuse_if_open=True)
+            result = []
+            db_query = Duty_List.select().where(Duty_List.duty_date == duty_date, Duty_List.area == area)
+            for v in db_query:
+                result.append((vars(v))['__data__'])
+            logger.info('get duty for %s %s %s', duty_date, area, result)
+            return result
+        except Exception as e:
+            logger.exception('exception in db get duty in area %s', str(e))
+        finally:
+            self.db.close()
+
+    def set_dutylist(self, dl):
+        try:
+            self.db.connect(reuse_if_open=True)
+            db_duty, _ = Duty_List.get_or_create(duty_date=dl['duty_date'], area=dl['area'])
+            db_duty.full_name = dl['full_name']
+            db_duty.account_name = dl['account_name']
+            db_duty.full_text = dl['full_text']
+            db_duty.tg_login = dl['tg_login']
+            db_duty.save()
+        except Exception as e:
+            logger.exception('error in set dutylist %s', str(e))
+        finally:
+            self.db.close()
+    
+    # ---------------------------------
+    # ----- Workdays ------------------
+
+    def get_workday(self, ddate) -> list:
+        # Сходить в workdays_list и узнать, рабочий день или нет
+        logger.debug('get workday %s ', ddate)
+        try:
+            self.db.connect(reuse_if_open=True)
+            result = []
+            db_query = Workdays_List.select().where(Workdays_List.ddate == ddate)
+            for v in db_query:
+                result = vars(v)['__data__']
+            if 'is_workday' in result:
+                result = True if result['is_workday'] == 1 else False
+            else:
+                result = None
+            return result
+        except Exception as e:
+            logger.exception('exception in get workday %s', e)
+        finally:
+            self.db.close()
+
+    def set_workday(self, ddate, is_workday):
+        # Записать в workdays_list, рабочий день или нет
+        logger.info('set workday %s %s ', ddate, is_workday)
+        try:
+            self.db.connect(reuse_if_open=True)
+            db_users, _ = Workdays_List.get_or_create(ddate=ddate)
+            db_users.is_workday = is_workday
+            db_users.save()
+        except Exception as e:
+            logger.exception('exception in set workday %s', e)
+        finally:
+            self.db.close()
+
+    # ---------------------------------
+    # ----- ReleasesList -------------- 
+
+    def upsert_release(self, jira_task, app_name, app_version, fullname, date_create, date_update, resolution):
+        result = []
+        try:    
+            self.db.connect(reuse_if_open=True)
+            result = (Releases_List
+                .insert(jira_task=jira_task, app_name=app_name, app_version=app_version, fullname=fullname, date_create=date_create, 
+                    date_update=date_update, resolution=resolution)
+                .on_conflict(
+                    conflict_target=[Releases_List.jira_task],
+                    preserve=[Releases_List.date_create],
+                    update={Releases_List.app_name: app_name, Releases_List.app_version: app_version, Releases_List.fullname: fullname, 
+                            Releases_List.date_update: date_update, Releases_List.resolution: resolution})
+                .execute())
+            return result
+        except Exception as e:
+            logger.exception('exception in upsert release %s', e)
+            return result
+        finally:
+            self.db.close()
+
+    def get_release_notifications_sent(self, jira_task):
+        # Вернет массив, построенный из строкового поля notifications_sent. Если оно пусто, вернет массив с пустой строкой
+        try:
+            self.db.connect(reuse_if_open=True)
+            db_result = Releases_List.select(Releases_List.notifications_sent).where(Releases_List.jira_task == jira_task)
+            for r in db_result:
+                if r.notifications_sent:
+                    result = r.notifications_sent
+                else:
+                    result = ''
+            return (result).split(',')
+        except Exception as e:
+            logger.exception('exception in get release notification sent %s', e)
+            return []
+        finally:
+            self.db.close()
+
+    def set_release_notifications_sent(self, jira_task, notifications_sent):
+        # Обновит всю инфу в ячейке notifications_sent. Неважно, что передано в качестве значения - будет сохранено целиком
+        try:
+            self.db.connect(reuse_if_open=True)
+            result = (Releases_List
+                     .update(notifications_sent = notifications_sent)
+                     .where(Releases_List.jira_task == jira_task))
+            result.execute()
+        except Exception as e:
+            logger.exception('exception in set release notification sent %s', e)
+            return result
+        finally:
+            self.db.close()
+
+    def append_release_notifications_sent(self, jira_task, notifications_sent):
+        # Запишет инфу про отправленную нотификацию. Важно: функция работает с записью в ячейку как будто это сет данных
+        # т.е. всякое значение встречается лишь единожды, порядок при этом неважен
+        try:
+            self.db.connect(reuse_if_open=True)
+            notif_sent = self.get_release_notifications_sent(jira_task)
+            if notifications_sent in notif_sent.split(','):
+                notif_sent = notif_sent + ',' + notifications_sent
+            else:
+                notif_sent = notifications_sent
+            result = (Releases_List
+                     .update(notifications_sent = notif_sent)
+                     .where(Releases_List.jira_task == jira_task))
+            result.execute()
+        except Exception as e:
+            logger.exception('exception in append release notification sent %s', e)
+            return result
+        finally:
+            self.db.close()
+
+    def get_last_success_app_version(self, app_name):
+        # Вернет последнюю версию компоненты, успешно выехавшую на бой. Для роллбека
+        try:
+            result = ''
+            self.db.connect(reuse_if_open=True)
+            db_result = (Releases_List
+                        .select(Releases_List.app_version)
+                        .where(Releases_List.app_name == app_name, Releases_List.resolution == 'Выполнен')
+                        .order_by(Releases_List.jira_task.desc())
+                        .limit(1))
+            for r in db_result:
+                if r.app_version:
+                    result = r.app_version
+                else:
+                    result = ''
+            return result
+        except Exception as e:
+            logger.exception('exception in get last success app version %s', e)
+            return result
         finally:
             self.db.close()
