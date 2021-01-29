@@ -3,11 +3,14 @@
 """
 Работа с БД в PostgreSQL
 """
+# External
+import json
+from datetime import datetime
+from peewee import *
+# Internal
 import config
 import re
 from utils import logging
-from datetime import datetime
-from peewee import *
 
 logger = logging.setup()
 
