@@ -63,10 +63,9 @@ def calculate_statistics(jira_con):
     """
     logger.info('-- CALCULATE STATISTICS')
     try:
-        dict_work_day = request_read_aerospike(item='work_day_or_not', aerospike_set='remaster')
         today = datetime.today().strftime("%Y-%m-%d")
 
-        if dict_work_day.get(today):
+        if db().get_workday(today):
             returned = jira_con.search_issues(config.jira_filter_returned, maxResults=1000)
             msg = f'\nСегодня было *возвращено в очередь {len(returned)}* релизов:\n'
             msg += '\n'.join([f'{issue.key} = {issue.fields.summary}' for issue in returned])
@@ -315,25 +314,21 @@ def call_who_is_next(jira_con):
                         logger.info('I find, this is %s', finding_issue)
                         break
 
-                already_sent = request_read_aerospike(item='next_release',
-                                                      aerospike_set='next_release')
-                if bool(already_sent.get(str(finding_issue))):
+                already_sent = request_read_aerospike(item='next_release', aerospike_set='next_release')
+                notifications_sent = db().get_release_notifications_sent(rl_obj.jira_task)
+                if 'next_release' in notifications_sent:
+                # if bool(already_sent.get(str(finding_issue))):
                     logger.warning('Already sent notification to %s', str(finding_issue))
                 else:
+                    logger.info('I ready sent notification about next release: %s ', finding_issue)
                     request_write_aerospike(item='next_release', bins={str(finding_issue): 1},
                                             aerospike_set='next_release')
-                    # get recipients for finding_issue
-                    request_chat_id_api_v1 = requests.get(
-                        f'{config.api_chat_id}/{finding_issue}')
-                    recipients = request_chat_id_api_v1.json()
+                    db().append_release_notifications_sent(finding_issue, 'next_release')
 
-                    logger.error('I ready sent notification about next release: %s to %s',
-                                 finding_issue, recipients)
-                    txt_msg_to_recipients = 'Релиз [%s](%s) будет искать согласующих ' \
-                                            'в ближайшие 10-20 минут. Но это не точно.' \
-                                            % (finding_issue.fields.summary, finding_issue.permalink())
-                    #telegram_message = {'chat_id': recipients, 'text': txt_msg_to_recipients}
-                    informer.send_message_to_users(recipients, txt_msg_to_recipients)
+                    message = f"Релиз [{finding_issue.fields.summary}]({finding_issue.permalink()}) \
+                                будет искать согласующих в ближайшие 10-20 минут. Но это не точно."
+                    informer.send_message_to_approvers(task_json['jira_task'], message)
+                    informer.send_message_to_users(['ymvorobevda'], message)
         else:
             # Если продолжать нет необходимости, просто спим
             logger.debug('sleeping')
@@ -344,8 +339,6 @@ def call_who_is_next(jira_con):
 def who_is_next(jira_con):
     """
         Test write function for notificication about you release will be next
-        :param jira_con:
-        :return:
     """
 
     metaconfig_yaml = request_read_aerospike(item='deploy', aerospike_set='remaster')
