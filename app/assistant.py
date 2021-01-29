@@ -178,10 +178,10 @@ def duty_reminder_tststnd_daily():
     """
     logger.info('duty reminder tststnd daily started')
     msg = f"Будь сильным: *ты дежуришь по стендам сегодня*.\nПроверь, что:\n\
-       1. Автообновление *int* прошло успешно и [здесь]('https://jira.yamoney.ru/issues/?jql=labels%20%3D%20jenkins.SchemeUpdate%20and%20status%20not%20in%20(Closed%2CResolved)')\
+       1. Автообновление *int* прошло успешно и [здесь](https://jira.yamoney.ru/issues/?jql=labels%20%3D%20jenkins.SchemeUpdate%20and%20status%20not%20in%20(Closed%2CResolved))\
        нет задач. Перезапусти обновление, если оно не прошло.\n\
-       2. Ночные синки успешны и [здесь]('https://jira.yamoney.ru/issues/?jql=labels%20%3D%20cloud%20and%20status%20not%20in%20(Closed%2CResolved)') нет задач.\n\
-       Днем проверь как [пересоздалась btest]('https://jenkins-dev.yamoney.ru/job/CLOUD/job/Base/job/recreate_basetest/lastBuild'). Важно дотолкать ее до тестов, чтобы QA было что разбирать.\n\
+       2. Ночные синки успешны и [здесь](https://jira.yamoney.ru/issues/?jql=labels%20%3D%20cloud%20and%20status%20not%20in%20(Closed%2CResolved)) нет задач.\n\
+       Днем проверь как [пересоздалась btest](https://jenkins-dev.yamoney.ru/job/CLOUD/job/Base/job/recreate_basetest/lastBuild). Важно дотолкать ее до тестов, чтобы QA было что разбирать.\n\
        Если в результате чекапа есть повторяющиеся проблемы – сделай задачи на плановую починку."
     informer.send_message_to_users(['ymvorobevda'], msg)
     #duty_informing_from_schedule(0, 'ADMSYS(стенды)', msg)
