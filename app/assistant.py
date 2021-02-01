@@ -26,34 +26,6 @@ from utils import logging
 from utils.database import PostgresPool as db
 
 
-def request_read_aerospike(item, aerospike_set):
-    """
-        Read from aerospike via api-v1
-        :param: item - item in aerospike
-        :param: aerospike_set - set in aerospike
-        :return: 'Response' object - response from api-v1, a lot of methods
-    """
-    logger.info('request_read_aerospike started: item=%s, set=%s', item, aerospike_set)
-    headers = {'item': item, 'set': aerospike_set}
-    all_return_queue_task = requests.get(config.api_aerospike_read, headers=headers)
-    return all_return_queue_task.json()
-
-
-def request_write_aerospike(item, bins, aerospike_set):
-    """
-        Write to aerospike via api-v1
-        :param: item - item in aerospike
-        :param: aerospike_set - set in aerospike
-        :return: 'Response' object - response from api-v1, a lot of methods
-    """
-    logger.debug('request_write_aerospike started: item=%s, set=%s, bins=%s',
-                 item, aerospike_set, bins)
-    # json.dumps - for request we need str, not dict
-    headers = {'item': item, 'set': aerospike_set}
-    all_return_queue_task = requests.post(config.api_aerospike_write, headers=headers, json=bins)
-    return all_return_queue_task
-
-
 def calculate_statistics(jira_con):
     """
         Considers statistics, format in human readable format
@@ -187,7 +159,7 @@ def duty_reminder_tststnd_daily():
 
 def sync_duties_from_exchange():
     """
-        Ходит в Exchange и выгребает информацию о дежурствах. Помещает информацию в БД (пока aerospike).
+        Ходит в Exchange и выгребает информацию о дежурствах. Помещает в PG duty_list
         Все остальные методы ходят за инфой о дежурных в БД.
         Вызывается по cron-у, следовательно изменения в календаре отразятся в боте
     """
@@ -314,15 +286,11 @@ def call_who_is_next(jira_con):
                         logger.info('I find, this is %s', finding_issue)
                         break
 
-                already_sent = request_read_aerospike(item='next_release', aerospike_set='next_release')
                 notifications_sent = db().get_release_notifications_sent(rl_obj.jira_task)
                 if 'next_release' in notifications_sent:
-                # if bool(already_sent.get(str(finding_issue))):
                     logger.warning('Already sent notification to %s', str(finding_issue))
                 else:
                     logger.info('I ready sent notification about next release: %s ', finding_issue)
-                    request_write_aerospike(item='next_release', bins={str(finding_issue): 1},
-                                            aerospike_set='next_release')
                     db().append_release_notifications_sent(finding_issue, 'next_release')
 
                     message = f"Релиз [{finding_issue.fields.summary}]({finding_issue.permalink()}) \
@@ -341,8 +309,8 @@ def who_is_next(jira_con):
         Test write function for notificication about you release will be next
     """
 
-    metaconfig_yaml = request_read_aerospike(item='deploy', aerospike_set='remaster')
-    # if metaconfig_yaml['run'] == 2:
+    metaconfig_yaml = {'apps': []}
+
     metaconfig_yaml_apps = metaconfig_yaml['apps']
 
     tasks_wip = jira_con.search_issues(config.jira_filter_wip, maxResults=1000)

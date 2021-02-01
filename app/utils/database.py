@@ -75,7 +75,7 @@ class Users(BaseModel):
     email = CharField()
     notification = CharField(default='none')
     admin = IntegerField(default=0)
-    date_update = TimestampField()
+    date_update = DateField(default=None)
 
 class Workdays_List(BaseModel):
     ddate = DateField(primary_key=True)
