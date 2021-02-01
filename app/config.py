@@ -56,8 +56,6 @@ jira_filter_wip = 'project = ADMSYS AND ' \
 
 api = 'http://releasebot-api/api-v1'
 api_chat_id = f'{api}/chat-id'
-api_aerospike_read = f'{api}/aerospike/read'
-api_aerospike_write = f'{api}/aerospike/write'
 
 informer = 'http://ugr-informer1.admsys.yamoney.ru'
 informer_inform_duty_url = f'{informer}/inform_duty'
