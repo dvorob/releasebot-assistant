@@ -463,13 +463,10 @@ if __name__ == "__main__":
     scheduler.add_job(duty_reminder_weekend, 'cron', day_of_week='fri', hour=14, minute=1)
     scheduler.add_job(duty_reminder_tststnd_daily, 'cron', day_of_week='mon-fri', hour=10, minute=00)
 
-    # Who is next?
-    #scheduler.add_job(lambda: call_who_is_next(jira_connect), 'interval', minutes=1, max_instances=1)
-
     # Проверка, не уволились ли сотрудники. Запускается раз в час
     scheduler.add_job(get_dismissed_users, 'cron', day_of_week='*', hour='*', minute='25')
 
-    scheduler.add_job(sync_users_from_ad, 'cron', day_of_week='*', hour='*', minute='15')
+    scheduler.add_job(sync_users_from_ad, 'cron', day_of_week='*', hour='*', minute='55')
 
     # Поскольку в 10:00 в календаре присутствует двое дежурных - за вчера и за сегодня, процедура запускается в 5, 25 и 45 минут, чтобы не натыкаться на дубли и не вычищать их
     scheduler.add_job(sync_duties_from_exchange, 'cron', day_of_week='*', hour='*', minute='*')
