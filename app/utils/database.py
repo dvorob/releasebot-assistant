@@ -119,7 +119,7 @@ class PostgresPool:
         result = []
         try:
             self.db.connect(reuse_if_open=True)
-            full_name = re.split(' ', value)
+            full_name = re.split(' ', value.replace('ё', 'е'))
             if len(full_name) > 1:
                 db_users = Users.select().where(
                     (Users.full_name.startswith(full_name[0]) & Users.full_name.endswith(full_name[1])) |
@@ -146,7 +146,7 @@ class PostgresPool:
             self.db.connect(reuse_if_open=True)
             db_users, _ = Users.get_or_create(account_name=account_name)
             if full_name:
-                db_users.full_name = full_name
+                db_users.full_name = full_name.replace('ё', 'е')
             if tg_login:
                 db_users.tg_login = tg_login
             if working_status:
@@ -214,7 +214,7 @@ class PostgresPool:
         try:
             self.db.connect(reuse_if_open=True)
             db_duty, _ = Duty_List.get_or_create(duty_date=dl['duty_date'], area=dl['area'])
-            db_duty.full_name = dl['full_name']
+            db_duty.full_name = dl['full_name'].replace('ё', 'е')
             db_duty.account_name = dl['account_name']
             db_duty.full_text = dl['full_text']
             db_duty.tg_login = dl['tg_login']

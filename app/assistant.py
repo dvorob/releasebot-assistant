@@ -464,7 +464,7 @@ if __name__ == "__main__":
     scheduler.add_job(duty_reminder_tststnd_daily, 'cron', day_of_week='mon-fri', hour=10, minute=00)
 
     # Who is next?
-    scheduler.add_job(lambda: call_who_is_next(jira_connect), 'interval', minutes=1, max_instances=1)
+    #scheduler.add_job(lambda: call_who_is_next(jira_connect), 'interval', minutes=1, max_instances=1)
 
     # Проверка, не уволились ли сотрудники. Запускается раз в час
     scheduler.add_job(get_dismissed_users, 'cron', day_of_week='*', hour='*', minute='25')
