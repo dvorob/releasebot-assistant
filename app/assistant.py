@@ -112,6 +112,7 @@ def duty_informing_from_schedule(after_days, area, msg):
                 logger.info('YM release bot was blocked by %s', d['tg_login'])
             except ChatNotFound:
                 logger.error('Chat not found with: %s', d['tg_login'])
+    informer.send_message_to_users(['ymvorobevda'], msg)
 
 
 def duty_reminder_daily_morning():
@@ -154,8 +155,7 @@ def duty_reminder_tststnd_daily():
        2. Ночные синки успешны и [здесь](https://jira.yamoney.ru/issues/?jql=labels%20%3D%20cloud%20and%20status%20!%3D%20Closed%20and%20status%20!%3D%20Resolved) нет задач.\n\
        Днем проверь как [пересоздалась btest](https://jenkins-dev.yamoney.ru/job/CLOUD/job/Base/job/recreate_basetest/lastBuild). Важно дотолкать ее до тестов, чтобы QA было что разбирать.\n\
        Если в результате чекапа есть повторяющиеся проблемы – сделай задачи на плановую починку."
-    informer.send_message_to_users(['ymvorobevda'], msg)
-    #duty_informing_from_schedule(0, 'ADMSYS(стенды)', msg)
+    duty_informing_from_schedule(0, 'ADMSYS(стенды)', msg)
 
 def sync_duties_from_exchange():
     """
