@@ -106,13 +106,12 @@ def duty_informing_from_schedule(after_days, area, msg):
     if len(dutymen_array) > 0:
         for d in dutymen_array:
             try:
-                logger.info('try to send message to %s %s', d, msg)
+                logger.debug('try to send message to %s %s', d, msg)
                 informer.send_message_to_users([d['account_name']], msg)
             except BotBlocked:
                 logger.info('YM release bot was blocked by %s', d['tg_login'])
             except ChatNotFound:
                 logger.error('Chat not found with: %s', d['tg_login'])
-    informer.send_message_to_users(['ymvorobevda'], msg)
 
 
 def duty_reminder_daily_morning():
@@ -152,8 +151,8 @@ def duty_reminder_tststnd_daily():
     msg = f"Будь сильным: <b>ты дежуришь по стендам сегодня</b>.\nПроверь, что:\n\
        1. Автообновление <b>int</b> прошло успешно и <a href='https://jira.yamoney.ru/issues/?jql=labels%20%3D%20jenkins.SchemeUpdate%20and%20status%20!%3D%20Closed%20and%20status%20!%3D%20Resolved'>здесь</a>\
        нет задач. Перезапусти обновление, если оно не прошло.\n\
-       2. Ночные синки успешны и <a href='https://jira.yamoney.ru/issues/?jql=labels%20%3D%20cloud%20and%20status%20!%3D%20Closed%20and%20status%20!%3D%20Resolved>здесь</a> нет задач.\n\
-       Днем проверь как <a href='https://jenkins-dev.yamoney.ru/job/CLOUD/job/Base/job/recreate_basetest/lastBuild>пересоздалась btest</a>. Важно дотолкать ее до тестов, чтобы QA было что разбирать.\n\
+       2. Ночные синки успешны и <a href='https://jira.yamoney.ru/issues/?jql=labels%20%3D%20cloud%20and%20status%20!%3D%20Closed%20and%20status%20!%3D%20Resolved'>здесь</a> нет задач.\n\
+       Днем проверь как <a href='https://jenkins-dev.yamoney.ru/job/CLOUD/job/Base/job/recreate_basetest/lastBuild'>пересоздалась btest</a>. Важно дотолкать ее до тестов, чтобы QA было что разбирать.\n\
        Если в результате чекапа есть повторяющиеся проблемы – сделай задачи на плановую починку."
     duty_informing_from_schedule(0, 'ADMSYS(стенды)', msg)
 
@@ -296,7 +295,6 @@ def call_who_is_next(jira_con):
                     message = f"Релиз [{finding_issue.fields.summary}]({finding_issue.permalink()}) \
                                 будет искать согласующих в ближайшие 10-20 минут. Но это не точно."
                     informer.send_message_to_approvers(task_json['jira_task'], message)
-                    informer.send_message_to_users(['ymvorobevda'], message)
         else:
             # Если продолжать нет необходимости, просто спим
             logger.debug('sleeping')
@@ -461,7 +459,7 @@ if __name__ == "__main__":
     scheduler.add_job(duty_reminder_daily_morning, 'cron', day_of_week='*',  hour=9, minute=45)
     scheduler.add_job(duty_reminder_daily_evening, 'cron', day_of_week='mon,tue,wed,thu',  hour=18, minute=30)
     scheduler.add_job(duty_reminder_weekend, 'cron', day_of_week='fri', hour=14, minute=1)
-    scheduler.add_job(duty_reminder_tststnd_daily, 'cron', day_of_week='mon-fri', hour=10, minute=00)
+    scheduler.add_job(duty_reminder_tststnd_daily, 'cron', day_of_week='mon-fri', hour=10, minute=35)
 
     # Проверка, не уволились ли сотрудники. Запускается раз в час
     scheduler.add_job(get_dismissed_users, 'cron', day_of_week='*', hour='*', minute='25')
