@@ -38,16 +38,15 @@ def calculate_statistics(jira_con):
         today = datetime.today().strftime("%Y-%m-%d")
 
         if db().get_workday(today):
-            returned = jira_con.search_issues(config.jira_filter_returned, maxResults=1000)
-            msg = f'\nСегодня было *возвращено в очередь {len(returned)}* релизов\n'
-            #msg += '\n'.join([f'{issue.key} = {issue.fields.summary}' for issue in returned])
+            #returned = jira_con.search_issues(config.jira_filter_returned, maxResults=1000)
+            msg = f'Статистика по релизам за сегодня.\n'
 
             rollback = jira_con.search_issues(config.jira_rollback_today, maxResults=1000)
-            msg += f'\n<b>Откачено {len(rollback)}</b> релизов:\n'
+            msg += f'\n<b>{len(rollback)} откачено</b>:\n'
             msg += '\n'.join([f'<a href="{config.jira_host}/browse/{issue.key}">{issue.fields.summary}</a>' for issue in rollback])
 
             resolved = jira_con.search_issues(config.jira_resolved_today, maxResults=1000)
-            msg += f'\n<b>*Выложено {len(resolved)}*</b> релизов:\n'
+            msg += f'\n<b>{len(resolved)} выложено</b>:\n'
             msg += '\n'.join([f'<a href="{config.jira_host}/browse/{issue.key}">{issue.fields.summary}</a>' for issue in resolved])
 
             #informer.inform_subscribers('all', msg)
@@ -454,7 +453,7 @@ if __name__ == "__main__":
     scheduler = BlockingScheduler(timezone='Europe/Moscow')
 
     # Сбор статистики
-    scheduler.add_job(lambda: calculate_statistics(jira_connect), 'cron', day_of_week='*', hour=19, minute=13)
+    scheduler.add_job(lambda: calculate_statistics(jira_connect), 'cron', day_of_week='*', hour=19, minute=23)
 
     # Напоминания о дежурствах
     scheduler.add_job(duty_reminder_daily_morning, 'cron', day_of_week='*',  hour=9, minute=45)
