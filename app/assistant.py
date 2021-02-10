@@ -39,20 +39,21 @@ def calculate_statistics(jira_con):
 
         if db().get_workday(today):
             returned = jira_con.search_issues(config.jira_filter_returned, maxResults=1000)
-            msg = f'\nСегодня было *возвращено в очередь {len(returned)}* релизов:\n'
-            msg += '\n'.join([f'{issue.key} = {issue.fields.summary}' for issue in returned])
-
-            resolved = jira_con.search_issues(config.jira_resolved_today, maxResults=1000)
-            msg += f'\nСегодня было *выкачено {len(resolved)}* релизов:\n'
-            msg += '\n'.join([f'{issue.key} = {issue.fields.summary}' for issue in resolved])
+            msg = f'\nСегодня было *возвращено в очередь {len(returned)}* релизов\n'
+            #msg += '\n'.join([f'{issue.key} = {issue.fields.summary}' for issue in returned])
 
             rollback = jira_con.search_issues(config.jira_rollback_today, maxResults=1000)
-            msg += f'\nСегодня было *откачено {len(rollback)}* релизов:\n'
-            msg += '\n'.join([f'{issue.key} = {issue.fields.summary}' for issue in rollback])
+            msg += f'\n<b>Откачено {len(rollback)}</b> релизов:\n'
+            msg += '\n'.join([f'<a href="{config.jira_host}/browse/{issue.key}">{issue.fields.summary}</a>' for issue in rollback])
 
-            informer.inform_subscribers('all', msg)
+            resolved = jira_con.search_issues(config.jira_resolved_today, maxResults=1000)
+            msg += f'\n<b>*Выложено {len(resolved)}*</b> релизов:\n'
+            msg += '\n'.join([f'<a href="{config.jira_host}/browse/{issue.key}">{issue.fields.summary}</a>' for issue in resolved])
+
+            #informer.inform_subscribers('all', msg)
             # Пока не выделил отдельный тип в подписке - 'subscribers', будет так.
-            informer.send_message_to_users(['gaidai', 'atampel'], msg)
+            #informer.send_message_to_users(['gaidai', 'atampel'], msg)
+            informer.send_message_to_users(['ymvorobevda'], msg)
             logger.info('Statistics:\n %s\n Has been sent')
         else:
             logger.info('No, today is a holiday, I don\'t want to count statistics')
@@ -453,13 +454,13 @@ if __name__ == "__main__":
     scheduler = BlockingScheduler(timezone='Europe/Moscow')
 
     # Сбор статистики
-    scheduler.add_job(lambda: calculate_statistics(jira_connect), 'cron', day_of_week='*', hour=19, minute=00)
+    scheduler.add_job(lambda: calculate_statistics(jira_connect), 'cron', day_of_week='*', hour=19, minute=13)
 
     # Напоминания о дежурствах
     scheduler.add_job(duty_reminder_daily_morning, 'cron', day_of_week='*',  hour=9, minute=45)
     scheduler.add_job(duty_reminder_daily_evening, 'cron', day_of_week='mon,tue,wed,thu',  hour=18, minute=30)
     scheduler.add_job(duty_reminder_weekend, 'cron', day_of_week='fri', hour=14, minute=1)
-    scheduler.add_job(duty_reminder_tststnd_daily, 'cron', day_of_week='mon-fri', hour=10, minute=35)
+    scheduler.add_job(duty_reminder_tststnd_daily, 'cron', day_of_week='mon-fri', hour=10, minute=00)
 
     # Проверка, не уволились ли сотрудники. Запускается раз в час
     scheduler.add_job(get_dismissed_users, 'cron', day_of_week='*', hour='*', minute='25')
