@@ -10,7 +10,7 @@ ex_pass = getenv('secret_exchange_pass')
 ex_cal = 'adminsonduty@yamoney.ru'
 ex_tz = 'Europe/Moscow'
 
-jira_host = 'https://jira.yamoney.ru/'
+jira_host = 'https://jira.yamoney.ru'
 # через secret задается в кубере
 jira_user = getenv('secret_jira_user')
 jira_pass = getenv('secret_jira_pass')
@@ -19,20 +19,20 @@ jira_filter_returned = 'project = ADMSYS AND ' \
                        'issuetype = "Release (conf)" AND ' \
                        '(status not in (Closed, Resolved) OR updated >= startOfDay() ' \
                        'AND status in (Resolved)) AND ' \
-                       'text ~ возвращена ORDER BY priority DESC, Rank ASC, key ASC'
+                       'text ~ возвращена ORDER BY summary DESC, key ASC'
 
 jira_resolved_today = 'project = ADMSYS AND ' \
                       'issuetype = "Release (conf)" AND ' \
                       'status = Resolved AND updated >= startOfDay() AND ' \
                       'resolution not in (Rollback) ' \
-                      'ORDER BY priority DESC, Rank ASC, key ASC'
+                      'ORDER BY summary DESC, key ASC'
 
 jira_rollback_today = 'project = ADMSYS AND ' \
                       'issuetype = "Release (conf)" AND ' \
                       'resolutiondate >= startOfDay() AND ' \
                       'updated >= startOfDay() AND ' \
                       'resolution = Rollback ' \
-                      'ORDER BY priority DESC, Rank ASC, key ASC'
+                      'ORDER BY summary DESC, key ASC'
 
 jira_filter_full = 'project = ADMSYS AND ' \
                    'issuetype = "Release (conf)" AND ' \
