@@ -115,19 +115,21 @@ def duty_informing_from_schedule(after_days, area, msg):
 
 
 def timetable_reminder():
+    """
+        Отправить уведомление с расписанием на день
+    """
+    logger.info('-- TIMETABLE REMINDER : %s %s', resp.status, resp.json())
     try:
-        # session = await get_session()
-        # async with session.get(config.api_get_timetable, headers=header) as resp:
-        #     data = await resp.json()
-        data = requests.get(config.api_get_timetable, headers=header)
-        logger.info(data)
-        msg = data['message']
-        logger.info('-- TIMETABLE REMINDER : %s %s', resp.status, resp.json())
         for acc in db().get_all_users_with_subscription('timetable'):
-            informer.send_message_to_users(acc, msg)
+            #informer.send_timetable_to_users(acc)
+            header = {'calendar_email': 'dmitryvorobev@yoomoney.ru', 'afterdays': str(after_days)}
+            responses = []
+            with requests.session() as session:
+                resp = session.get(config.api_get_timetable, headers=header)
+                responses.append(resp.json())
+            logger.info(responses)
     except Exception as e:
-        logger.exception('Error in timetable reminder %s', e)
-
+        logger.exception('exception in timetable %s', str(e))
 
 def duty_reminder_daily_morning():
     msg = 'Крепись, ты сегодня дежуришь. С 10:00, если что.'
