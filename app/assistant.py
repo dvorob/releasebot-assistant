@@ -127,7 +127,7 @@ def timetable_reminder():
             with requests.session() as session:
                 resp = session.get(config.api_get_timetable, headers=header)
                 msg = (resp.json())['message']
-            send_message_to_users(acc, msg)
+            informer.send_message_to_users(acc, msg)
     except Exception as e:
         logger.exception('exception in timetable %s', str(e))
 
