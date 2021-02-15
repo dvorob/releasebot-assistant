@@ -114,11 +114,6 @@ def duty_informing_from_schedule(after_days, area, msg):
                 logger.error('Chat not found with: %s', d['tg_login'])
 
 
-def timetable_wrap():
-    logger.info('-- TIMETABLE WRAP ')
-    timetable_reminder()
-
-
 def timetable_reminder():
     """
         Отправить уведомление с расписанием на день
@@ -127,7 +122,7 @@ def timetable_reminder():
     try:
         for acc in db().get_all_users_with_subscription('timetable'):
             #informer.send_timetable_to_users(acc)
-            header = {'calendar_email': 'dmitryvorobev@yoomoney.ru', 'afterdays': str(after_days)}
+            header = {'calendar_email': 'dmitryvorobev@yoomoney.ru', 'afterdays': str(0)}
             responses = []
             with requests.session() as session:
                 resp = session.get(config.api_get_timetable, headers=header)
