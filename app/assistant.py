@@ -114,11 +114,13 @@ def duty_informing_from_schedule(after_days, area, msg):
                 logger.error('Chat not found with: %s', d['tg_login'])
 
 
-async def timetable_reminder():
+def timetable_reminder():
     try:
-        session = await get_session()
-        async with session.get(config.api_get_timetable, headers=header) as resp:
-            data = await resp.json()
+        # session = await get_session()
+        # async with session.get(config.api_get_timetable, headers=header) as resp:
+        #     data = await resp.json()
+        data = requests.get(config.api_get_timetable, headers=header)
+        logger.info(data)
         msg = data['message']
         logger.info('-- TIMETABLE REMINDER : %s %s', resp.status, resp.json())
         for acc in db().get_all_users_with_subscription('timetable'):
