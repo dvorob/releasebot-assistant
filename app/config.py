@@ -56,6 +56,7 @@ jira_filter_wip = 'project = ADMSYS AND ' \
 
 api = 'http://releasebot-api/api-v1'
 api_chat_id = f'{api}/chat-id'
+api_get_timetable = f'{api}/exchange/get_timetable'
 
 informer = 'http://ugr-informer1.admsys.yamoney.ru'
 informer_inform_duty_url = f'{informer}/inform_duty'
