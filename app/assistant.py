@@ -126,6 +126,7 @@ def timetable_reminder():
             responses = []
             with requests.session() as session:
                 resp = session.get(config.api_get_timetable, headers=header)
+                logger.info(resp)
                 responses.append(resp.json())
             logger.info(responses)
     except Exception as e:
