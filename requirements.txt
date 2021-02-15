@@ -1,3 +1,4 @@
+aiohttp==3.6.2
 apscheduler==3.6.1
 exchangelib==3.1.0
 jira==2.0.0

@@ -5,6 +5,7 @@
     запуск джоб по расписанию, статистика и прочее
 """
 # External
+import aiohttp
 import json
 import ldap3
 import logging.config
@@ -111,6 +112,19 @@ def duty_informing_from_schedule(after_days, area, msg):
                 logger.info('YM release bot was blocked by %s', d['tg_login'])
             except ChatNotFound:
                 logger.error('Chat not found with: %s', d['tg_login'])
+
+
+def timetable_reminder():
+    try:
+        session = await get_session()
+        async with session.get(config.api_get_timetable, headers=header) as resp:
+            data = await resp.json()
+        msg = data['message']
+        logger.info('-- TIMETABLE REMINDER : %s %s', resp.status, resp.json())
+        for acc in db().get_all_users_with_subscription('timetable'):
+            informer.send_message_to_users(acc, msg)
+    except Exception as e:
+        logger.exception('Error in timetable reminder %s', e)
 
 
 def duty_reminder_daily_morning():
@@ -459,6 +473,7 @@ if __name__ == "__main__":
     scheduler.add_job(duty_reminder_daily_evening, 'cron', day_of_week='mon,tue,wed,thu',  hour=18, minute=30)
     scheduler.add_job(duty_reminder_weekend, 'cron', day_of_week='fri', hour=14, minute=1)
     scheduler.add_job(duty_reminder_tststnd_daily, 'cron', day_of_week='mon-fri', hour=10, minute=00)
+    scheduler.add_job(timetable_reminder, 'cron', day_of_week='mon-fri', hour='*', minute='*')
 
     # Проверка, не уволились ли сотрудники. Запускается раз в час
     scheduler.add_job(get_dismissed_users, 'cron', day_of_week='*', hour='*', minute='25')
@@ -466,7 +481,7 @@ if __name__ == "__main__":
     scheduler.add_job(sync_users_from_ad, 'cron', day_of_week='*', hour='*', minute='55')
 
     # Поскольку в 10:00 в календаре присутствует двое дежурных - за вчера и за сегодня, процедура запускается в 5, 25 и 45 минут, чтобы не натыкаться на дубли и не вычищать их
-    scheduler.add_job(sync_duties_from_exchange, 'cron', day_of_week='*', hour='*', minute='*')
+    scheduler.add_job(sync_duties_from_exchange, 'cron', day_of_week='*', hour='*', minute='5-59/20')
 
     # Запускаем расписание
     scheduler.start()
