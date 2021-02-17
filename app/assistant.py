@@ -477,7 +477,7 @@ if __name__ == "__main__":
     scheduler.add_job(duty_reminder_daily_evening, 'cron', day_of_week='mon,tue,wed,thu',  hour=18, minute=30)
     scheduler.add_job(duty_reminder_weekend, 'cron', day_of_week='fri', hour=14, minute=1)
     scheduler.add_job(duty_reminder_tststnd_daily, 'cron', day_of_week='mon-fri', hour=10, minute=00)
-    scheduler.add_job(timetable_reminder, 'cron', day_of_week='mon-fri', hour=11, minute=10)
+    scheduler.add_job(timetable_reminder, 'cron', day_of_week='mon-fri', hour=9, minute=30)
 
     # Проверка, не уволились ли сотрудники. Запускается раз в час
     scheduler.add_job(get_dismissed_users, 'cron', day_of_week='*', hour='*', minute='25')
