@@ -53,7 +53,6 @@ def calculate_statistics(jira_con):
             informer.inform_subscribers('release_events', msg)
             informer.inform_subscribers('statistics', msg)
             # Пока не выделил отдельный тип в подписке - 'subscribers', будет так.
-            informer.send_message_to_users(['gaidai', 'atampel'], msg)
             logger.info('Statistics:\n %s\n Has been sent')
         else:
             logger.info('No, today is a holiday, I don\'t want to count statistics')
@@ -471,7 +470,7 @@ if __name__ == "__main__":
     scheduler = BlockingScheduler(timezone='Europe/Moscow')
 
     # Сбор статистики
-    scheduler.add_job(lambda: calculate_statistics(jira_connect), 'cron', day_of_week='*', hour=19, minute=00)
+    scheduler.add_job(lambda: calculate_statistics(jira_connect), 'cron', day_of_week='*', hour=19, minute=30)
 
     # Напоминания о дежурствах
     scheduler.add_job(duty_reminder_daily_morning, 'cron', day_of_week='*',  hour=9, minute=45)
