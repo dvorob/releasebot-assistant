@@ -50,7 +50,8 @@ def calculate_statistics(jira_con):
             msg += f'\n<b>{len(resolved)} выложено</b>:\n'
             msg += '\n'.join([f'<a href="{config.jira_host}/browse/{issue.key}">{issue.fields.summary}</a>' for issue in resolved])
 
-            informer.inform_subscribers('all', msg)
+            informer.inform_subscribers('release_events', msg)
+            informer.inform_subscribers('statistics', msg)
             # Пока не выделил отдельный тип в подписке - 'subscribers', будет так.
             informer.send_message_to_users(['gaidai', 'atampel'], msg)
             logger.info('Statistics:\n %s\n Has been sent')
