@@ -50,7 +50,6 @@ def calculate_statistics(jira_con):
             msg += f'\n<b>{len(resolved)} выложено</b>:\n'
             msg += '\n'.join([f'<a href="{config.jira_host}/browse/{issue.key}">{issue.fields.summary}</a>' for issue in resolved])
 
-            informer.inform_subscribers('release_events', msg)
             informer.inform_subscribers('statistics', msg)
             # Пока не выделил отдельный тип в подписке - 'subscribers', будет так.
             logger.info('Statistics:\n %s\n Has been sent')
@@ -116,20 +115,27 @@ def duty_informing_from_schedule(after_days, area, msg):
 
 def timetable_reminder():
     """
-        Отправить уведомление с расписанием на день
+        Отправить уведомление с расписанием на день.
+        У каждого пользователя свой календарь, поэтому отправить всё в ручку informer/inform_subscribers не получится.
     """
     logger.info('-- TIMETABLE REMINDER')
-    for acc in db().get_all_users_with_subscription('timetable'):
-        try:
-            db_users = db().get_users('account_name', acc, 'equal')
-            header = {'calendar_email': db_users[0]['email'], 'afterdays': str(0)}
-            responses = []
-            with requests.session() as session:
-                resp = session.get(config.api_get_timetable, headers=header)
-                msg = (resp.json())['message']
-            informer.send_message_to_users([acc], msg)
-        except Exception as e:
-            logger.exception('exception in timetable %s', str(e))
+    today = datetime.today().strftime("%Y-%m-%d")
+
+    if db().get_workday(today):
+        for acc in db().get_all_users_with_subscription('timetable'):
+            try:
+                db_users = db().get_users('account_name', acc, 'equal')
+                header = {'calendar_email': db_users[0]['email'], 'afterdays': str(0)}
+                responses = []
+                with requests.session() as session:
+                    resp = session.get(config.api_get_timetable, headers=header)
+                    msg = (resp.json())['message']
+                informer.send_message_to_users([acc], msg)
+            except Exception as e:
+                logger.exception('exception in timetable %s', str(e))
+    else:
+        logger.info('No, today is a holiday, I don\'t want to send timetable reminder')
+
 
 def duty_reminder_daily_morning():
     msg = 'Крепись, ты сегодня дежуришь. С 10:00, если что.'
@@ -171,7 +177,7 @@ def duty_reminder_tststnd_daily():
        2. Ночные синки успешны и <a href='https://jira.yamoney.ru/issues/?jql=labels%20%3D%20cloud%20and%20status%20!%3D%20Closed%20and%20status%20!%3D%20Resolved'>здесь</a> нет задач.\n\
        Днем проверь как <a href='https://jenkins-dev.yamoney.ru/job/CLOUD/job/Base/job/recreate_basetest/lastBuild'>пересоздалась btest</a>. Важно дотолкать ее до тестов, чтобы QA было что разбирать.\n\
        Если в результате чекапа есть повторяющиеся проблемы – сделай задачи на плановую починку."
-    duty_informing_from_schedule(0, 'ADMSYS(стенды)', msg)
+    duty_informing_from_schedule(0, 'ADMSYS(tststnd)', msg)
 
 def sync_duties_from_exchange():
     """
@@ -470,14 +476,14 @@ if __name__ == "__main__":
     scheduler = BlockingScheduler(timezone='Europe/Moscow')
 
     # Сбор статистики
-    scheduler.add_job(lambda: calculate_statistics(jira_connect), 'cron', day_of_week='*', hour=19, minute=50)
+    scheduler.add_job(lambda: calculate_statistics(jira_connect), 'cron', day_of_week='*', hour=19, minute=00)
 
     # Напоминания о дежурствах
     scheduler.add_job(duty_reminder_daily_morning, 'cron', day_of_week='*',  hour=9, minute=45)
     scheduler.add_job(duty_reminder_daily_evening, 'cron', day_of_week='mon,tue,wed,thu',  hour=18, minute=30)
     scheduler.add_job(duty_reminder_weekend, 'cron', day_of_week='fri', hour=14, minute=1)
-    scheduler.add_job(duty_reminder_tststnd_daily, 'cron', day_of_week='mon-fri', hour=10, minute=00)
-    scheduler.add_job(timetable_reminder, 'cron', day_of_week='mon-fri', hour=9, minute=30)
+    scheduler.add_job(duty_reminder_tststnd_daily, 'cron', day_of_week='mon-fri', hour=9, minute=25)
+    scheduler.add_job(timetable_reminder, 'cron', day_of_week='*', hour=9, minute=30)
 
     # Проверка, не уволились ли сотрудники. Запускается раз в час
     scheduler.add_job(get_dismissed_users, 'cron', day_of_week='*', hour='*', minute='25')
