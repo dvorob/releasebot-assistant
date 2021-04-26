@@ -20,6 +20,16 @@ class BaseModel(Model):
     class Meta:
         database = config.postgres
 
+class App_List(BaseModel):
+    id = IntegerField(primary_key=True)
+    app_name = CharField(unique=True)
+    perimeter = CharField(default=None)
+    release_mode = CharField(default=None)
+    admins_team = CharField(default=None)
+    queues = TextField(default=None)
+    bot_enabled = BooleanField(default=None)
+    dev_team = CharField(default=None)
+
 class Chats(BaseModel):
     id = IntegerField()
     tg_id = CharField()
@@ -90,6 +100,55 @@ class PostgresPool:
 
     def __init__(self):
         self.db = config.postgres
+
+    # ---------------------------------
+    # ----- AppList -------------------
+
+    def get_application_metainfo(self, app_name) -> list:
+        # Сходить в AppList и получить конфигурацию деплоя конкретного приложения - очереди, режим выкладки и прочее
+        logger.debug('get application metainfo %s ', app_name)
+        try:
+            self.db.connect(reuse_if_open=True)
+            result = []
+            db_query = App_List.select().where(App_List.app_name == app_name)
+            for v in db_query:
+                result = vars(v)['__data__']
+            return result
+        except Exception as e:
+            logger.exception('exception in get application metainfo %s', e)
+        finally:
+            self.db.close()
+
+    def set_application_bot_enabled(self, app_name, value) -> list:
+        # Выставить значение в конкретном поле bot_enabled
+        # ('shiro', 'bot_enabled', False)
+        logger.debug('set application bot enabled %s %s', app_name, value)
+        try:
+            self.db.connect(reuse_if_open=True)
+            result = (App_List
+                     .update(bot_enabled = value)
+                     .where(App_List.app_name == app_name))
+            result.execute()
+        except Exception as e:
+            logger.exception('exception in set application bot enabled %s', e)
+            return result
+        finally:
+            self.db.close()
+
+    def set_application_dev_team(self, app_name, value) -> list:
+        # Выставить значение в конкретном поле dev_team
+        # ('shiro', 'dev_team', 'PORTAL')
+        try:
+            self.db.connect(reuse_if_open=True)
+            result = (App_List
+                     .update(dev_team = value)
+                     .where(App_List.app_name == app_name))
+            result.execute()
+        except Exception as e:
+            logger.exception('exception in set application dev team %s', e)
+            return result
+        finally:
+            self.db.close()
 
     # ---------------------------------
     # ----- Users ---------------------
