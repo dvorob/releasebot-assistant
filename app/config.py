@@ -54,6 +54,8 @@ jira_filter_wip = 'project = ADMSYS AND ' \
                   'status not in (Closed, Resolved, "Waiting release") ' \
                   'ORDER BY priority DESC, updatedDate ASC'
 
+jira_filter_components = 'project = COM AND "Target Project" in (BACKEND, BACKEND-API, FRONTEND, YCAPI)'
+
 api_chat_id = 'http://releasebot-api/api-v1/chat-id'
 api_get_timetable = 'http://releasebot-api/exchange/get_timetable'
 

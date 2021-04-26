@@ -17,7 +17,6 @@ from datetime import timedelta, datetime
 from exchangelib import DELEGATE, Configuration, Credentials, Account
 from exchangelib.ewsdatetime import UTC_NOW
 from exchangelib.protocol import BaseProtocol, NoVerifyHTTPAdapter
-from jira import JIRA
 from ldap3 import Server, Connection, SIMPLE, SYNC, ASYNC, SUBTREE, ALL
 from peewee import *
 # Internal
@@ -25,28 +24,26 @@ import config as config
 import utils.informer as informer
 from utils import logging
 from utils.database import PostgresPool as db
+from utils.jiratools import JiraConnection, jira_get_components
 
 
-def calculate_statistics(jira_con):
+def calculate_statistics():
     """
         Considers statistics, format in human readable format
         and send
-        :param jira_con: parameters jira connection
-        :return: nothing
     """
     logger.info('-- CALCULATE STATISTICS')
     try:
         today = datetime.today().strftime("%Y-%m-%d")
 
         if db().get_workday(today):
-            #returned = jira_con.search_issues(config.jira_filter_returned, maxResults=1000)
             msg = f'Статистика по релизам за сегодня.\n'
 
-            rollback = jira_con.search_issues(config.jira_rollback_today, maxResults=1000)
+            rollback = JiraConnection().search_issues(config.jira_rollback_today, maxResults=1000)
             msg += f'\n<b>{len(rollback)} откачено</b>:\n'
             msg += '\n'.join([f'<a href="{config.jira_host}/browse/{issue.key}">{issue.fields.summary}</a>' for issue in rollback])
 
-            resolved = jira_con.search_issues(config.jira_resolved_today, maxResults=1000)
+            resolved = JiraConnection().search_issues(config.jira_resolved_today, maxResults=1000)
             msg += f'\n<b>{len(resolved)} выложено</b>:\n'
             msg += '\n'.join([f'<a href="{config.jira_host}/browse/{issue.key}">{issue.fields.summary}</a>' for issue in resolved])
 
@@ -177,7 +174,7 @@ def duty_reminder_tststnd_daily():
        2. Ночные синки успешны и <a href='https://jira.yamoney.ru/issues/?jql=labels%20%3D%20cloud%20and%20status%20!%3D%20Closed%20and%20status%20!%3D%20Resolved'>здесь</a> нет задач.\n\
        Днем проверь как <a href='https://jenkins-dev.yamoney.ru/job/CLOUD/job/Base/job/recreate_basetest/lastBuild'>пересоздалась btest</a>. Важно дотолкать ее до тестов, чтобы QA было что разбирать.\n\
        Если в результате чекапа есть повторяющиеся проблемы – сделай задачи на плановую починку."
-    duty_informing_from_schedule(0, 'ADMSYS(tststnd)', msg)
+    duty_informing_from_schedule(1, 'ADMSYS(tststnd)', msg)
 
 def sync_duties_from_exchange():
     """
@@ -283,7 +280,20 @@ def app_version(full_name_app):
         logger.warning('This task %s does not fit the required format' % full_name_app)
 
 
-def call_who_is_next(jira_con):
+def update_app_list_by_commands():
+    """
+    Запускается по расписанию, выгребает из Jira названия компонент и ответственные команды (из справочника COM)
+    Обновляет команды в таблице app_list в БД бота. 
+    """
+    try:
+        components = jira_get_components()
+        for c in components:
+            db().set_application_dev_team(c['app_name'], c['dev_team'])
+    except Exception as e:
+        logger.exception('Error in update app list %s', str(e))
+
+
+def call_who_is_next():
     """
     УБРАТЬ ОТСЮДА ЦЕЛИКОМ. ЕЙ МЕСТО В REMASTER
     """
@@ -296,11 +306,11 @@ def call_who_is_next(jira_con):
             # 0 - спать, 1 - доделывать, 2 - штатный режим
 
         if run_mode == 'on':
-            name_task_will_release_next = who_is_next(jira_con)
+            name_task_will_release_next = who_is_next()
             if not name_task_will_release_next:
                 logger.error('I can\'t find task_will_release_next')
             else:
-                issues = jira_con.search_issues(config.jira_filter_true_waiting, maxResults=1000)
+                issues = JiraConnection().search_issues(config.jira_filter_true_waiting, maxResults=1000)
 
                 for issue in issues:
                     if name_task_will_release_next in issue.fields.summary:
@@ -325,7 +335,7 @@ def call_who_is_next(jira_con):
         logger.exception('call_who_is_next')
 
 
-def who_is_next(jira_con):
+def who_is_next():
     """
         Test write function for notificication about you release will be next
     """
@@ -334,10 +344,10 @@ def who_is_next(jira_con):
 
     metaconfig_yaml_apps = metaconfig_yaml['apps']
 
-    tasks_wip = jira_con.search_issues(config.jira_filter_wip, maxResults=1000)
-    true_waiting_task = jira_con.search_issues(config.jira_filter_true_waiting, maxResults=1000)
-    task_full_deploy = jira_con.search_issues(config.jira_filter_full, maxResults=1000)
-    task_without_waiting_full = jira_con.search_issues(config.jira_filter_without_waiting_full,
+    tasks_wip = JiraConnection().search_issues(config.jira_filter_wip, maxResults=1000)
+    true_waiting_task = JiraConnection().search_issues(config.jira_filter_true_waiting, maxResults=1000)
+    task_full_deploy = JiraConnection().search_issues(config.jira_filter_full, maxResults=1000)
+    task_without_waiting_full = JiraConnection().search_issues(config.jira_filter_without_waiting_full,
                                                        maxResults=1000)
     # add to set only if app_version will return not None
     set_wip_tasks = {app_version(in_progress_issues.fields.summary)
@@ -469,14 +479,12 @@ if __name__ == "__main__":
     logger = logging.setup()
     logger.info('- - - START ASSISTANT - - - ')
 
-    jira_connect = JIRA(config.jira_options, basic_auth=(config.jira_user, config.jira_pass))
-
     # --- SCHEDULING ---
     # Инициализируем расписание
     scheduler = BlockingScheduler(timezone='Europe/Moscow')
 
     # Сбор статистики
-    scheduler.add_job(lambda: calculate_statistics(jira_connect), 'cron', day_of_week='*', hour=19, minute=00)
+    scheduler.add_job(lambda: calculate_statistics(), 'cron', day_of_week='*', hour=19, minute=00)
 
     # Напоминания о дежурствах
     scheduler.add_job(duty_reminder_daily_morning, 'cron', day_of_week='*',  hour=9, minute=45)
@@ -489,6 +497,9 @@ if __name__ == "__main__":
     scheduler.add_job(get_dismissed_users, 'cron', day_of_week='*', hour='*', minute='25')
 
     scheduler.add_job(sync_users_from_ad, 'cron', day_of_week='*', hour='*', minute='55')
+
+    # Обновить команды, ответственные за компоненты
+    scheduler.add_job(update_app_list_by_commands, 'cron', day_of_week='*', hour='*', minute='*/2')
 
     # Поскольку в 10:00 в календаре присутствует двое дежурных - за вчера и за сегодня, процедура запускается в 5, 25 и 45 минут, чтобы не натыкаться на дубли и не вычищать их
     scheduler.add_job(sync_duties_from_exchange, 'cron', day_of_week='*', hour='*', minute='5-59/20')
