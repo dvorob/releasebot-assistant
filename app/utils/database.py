@@ -63,6 +63,7 @@ class Releases_List(BaseModel):
     date_update = DateField(default=None)
     resolution = CharField(default=None)
     is_rollbacked = BooleanField(default=None)
+    is_static_released = BooleanField(default=None)
     notifications_sent = TextField(default=None)
 
 class Users(BaseModel):

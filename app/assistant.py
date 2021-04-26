@@ -177,7 +177,7 @@ def duty_reminder_tststnd_daily():
        2. Ночные синки успешны и <a href='https://jira.yamoney.ru/issues/?jql=labels%20%3D%20cloud%20and%20status%20!%3D%20Closed%20and%20status%20!%3D%20Resolved'>здесь</a> нет задач.\n\
        Днем проверь как <a href='https://jenkins-dev.yamoney.ru/job/CLOUD/job/Base/job/recreate_basetest/lastBuild'>пересоздалась btest</a>. Важно дотолкать ее до тестов, чтобы QA было что разбирать.\n\
        Если в результате чекапа есть повторяющиеся проблемы – сделай задачи на плановую починку."
-    duty_informing_from_schedule(0, 'ADMSYS(tststnd)', msg)
+    duty_informing_from_schedule(1, 'ADMSYS(tststnd)', msg)
 
 def sync_duties_from_exchange():
     """
