@@ -106,7 +106,7 @@ def jira_get_approvers_list(issue_key: str) -> list:
         logger.exception('Exception in JIRA GET APPROVERS LIST %s', e)
 
 def jira_get_components() -> list:
-    issues = JiraConnection().search_issues(config.jira_filter_components, maxResults=1000)
+    issues = JiraConnection().search_issues(config.jira_filter_components)
     components = []
     # Отберём компоненты по фильтру
     # Имя компоненты возьмем из поля RepoSlug (19193), уберём префиксы, если они есть
