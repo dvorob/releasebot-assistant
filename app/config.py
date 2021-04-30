@@ -90,6 +90,8 @@ base_dn = 'OU=Сотрудники Компании,DC=yamoney,DC=ru'
 ldap_filter = '(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))'
 ldap_attrs = ['cn','sAMAccountName','distinguishedName','extensionattribute4','memberOf','mail']
 
+oneass_calendar_api = 'http://fin3.yamoney.ru:8080/sais/bp/calendar/getCalendar'
+
 informer = 'http://ugr-informer1.admsys.yamoney.ru'
 informer_send_message_url = f'{informer}/send_message'
 informer_inform_duty_url = f'{informer}/inform_duty'

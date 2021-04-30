@@ -6,6 +6,7 @@
 """
 # External
 import aiohttp
+from bs4 import BeautifulSoup
 import json
 import ldap3
 import logging.config
@@ -39,11 +40,11 @@ def calculate_statistics():
         if db().get_workday(today):
             msg = f'Статистика по релизам за сегодня.\n'
 
-            rollback = JiraConnection().search_issues(config.jira_rollback_today, maxResults=1000)
+            rollback = JiraConnection().search_issues(config.jira_rollback_today)
             msg += f'\n<b>{len(rollback)} откачено</b>:\n'
             msg += '\n'.join([f'<a href="{config.jira_host}/browse/{issue.key}">{issue.fields.summary}</a>' for issue in rollback])
 
-            resolved = JiraConnection().search_issues(config.jira_resolved_today, maxResults=1000)
+            resolved = JiraConnection().search_issues(config.jira_resolved_today)
             msg += f'\n<b>{len(resolved)} выложено</b>:\n'
             msg += '\n'.join([f'<a href="{config.jira_host}/browse/{issue.key}">{issue.fields.summary}</a>' for issue in resolved])
 
@@ -310,7 +311,7 @@ def call_who_is_next():
             if not name_task_will_release_next:
                 logger.error('I can\'t find task_will_release_next')
             else:
-                issues = JiraConnection().search_issues(config.jira_filter_true_waiting, maxResults=1000)
+                issues = JiraConnection().search_issues(config.jira_filter_true_waiting)
 
                 for issue in issues:
                     if name_task_will_release_next in issue.fields.summary:
@@ -344,11 +345,10 @@ def who_is_next():
 
     metaconfig_yaml_apps = metaconfig_yaml['apps']
 
-    tasks_wip = JiraConnection().search_issues(config.jira_filter_wip, maxResults=1000)
-    true_waiting_task = JiraConnection().search_issues(config.jira_filter_true_waiting, maxResults=1000)
-    task_full_deploy = JiraConnection().search_issues(config.jira_filter_full, maxResults=1000)
-    task_without_waiting_full = JiraConnection().search_issues(config.jira_filter_without_waiting_full,
-                                                       maxResults=1000)
+    tasks_wip = JiraConnection().search_issues(config.jira_filter_wip)
+    true_waiting_task = JiraConnection().search_issues(config.jira_filter_true_waiting)
+    task_full_deploy = JiraConnection().search_issues(config.jira_filter_full)
+    task_without_waiting_full = JiraConnection().search_issues(config.jira_filter_without_waiting_full)
     # add to set only if app_version will return not None
     set_wip_tasks = {app_version(in_progress_issues.fields.summary)
                      for in_progress_issues in tasks_wip
@@ -430,6 +430,48 @@ def who_is_next():
                                         'full and waiting task.', task)
                             return task
 
+#########################################################################################
+#                      1C Calendar
+#########################################################################################
+
+def sync_calendar_daily():
+    """
+        Ежедневное обновление календаря в БД бота
+    """
+    logger.info('-- SYNC CALENDAR DAILY')
+    # Вернёт массив по кол-ву дней в году
+    soup = BeautifulSoup(get_calendar_from_1c(), 'lxml')
+    today = datetime.today()
+    today_for_calendar = today.strftime("%Y-%m-%d")
+    # Возьмем номер текущего дня с начала года
+    today_day_number = datetime.now().timetuple().tm_yday-1
+    # Переберём дни текущего и на 14 вперед, чтобы иметь запас на случай недоступности 1С или проблем интеграции
+    for day_number in range (today_day_number, today_day_number + 14):  
+        logger.debug('Today is %s', soup('workingcalendarday')[day_number]['typeofday'])
+        if soup('workingcalendarday')[day_number]['typeofday'] in {'Рабочий', 'Предпраздничный'}:
+            # Если сегодня рабочий день, положим в item work_day_or_not 1, set=remaster
+            db().set_workday(soup('workingcalendarday')[day_number]['date'], 1)
+        else:
+            db().set_workday(soup('workingcalendarday')[day_number]['date'], 0)
+            logger.debug('Isn\'t working day %s', soup('workingcalendarday')[day_number])
+
+
+def get_calendar_from_1c() -> str:
+    """
+        Запрос в API 1C за календарем
+    """
+    logger.info('-- GET CALENDAR FROM 1C')
+    try:
+        cur_year = datetime.now().year
+        req = requests.get(f"{config.oneass_calendar_api}?year={cur_year}")
+        logger.debug('GET CALENDAR FROM 1C: %s', req.text)
+        return req.text
+    except Exception as e:
+        logger.exception('Error in GET CALENDAR FROM 1C %s', e)
+
+#########################################################################################
+#                      USER FROM AD
+#########################################################################################
 
 def sync_users_from_ad():
     """
@@ -492,6 +534,9 @@ if __name__ == "__main__":
     scheduler.add_job(duty_reminder_weekend, 'cron', day_of_week='fri', hour=14, minute=1)
     scheduler.add_job(duty_reminder_tststnd_daily, 'cron', day_of_week='mon-fri', hour=9, minute=25)
     scheduler.add_job(timetable_reminder, 'cron', day_of_week='*', hour=9, minute=30)
+
+    # Забрать календарь из 1С
+    scheduler.add_job(sync_calendar_daily, 'cron', day_of_week='*', hour=9, minute=10)
 
     # Проверка, не уволились ли сотрудники. Запускается раз в час
     scheduler.add_job(get_dismissed_users, 'cron', day_of_week='*', hour='*', minute='25')
