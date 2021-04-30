@@ -40,11 +40,11 @@ def calculate_statistics():
         if db().get_workday(today):
             msg = f'Статистика по релизам за сегодня.\n'
 
-            rollback = JiraConnection().search_issues(config.jira_rollback_today, maxResults=1000)
+            rollback = JiraConnection().search_issues(config.jira_rollback_today)
             msg += f'\n<b>{len(rollback)} откачено</b>:\n'
             msg += '\n'.join([f'<a href="{config.jira_host}/browse/{issue.key}">{issue.fields.summary}</a>' for issue in rollback])
 
-            resolved = JiraConnection().search_issues(config.jira_resolved_today, maxResults=1000)
+            resolved = JiraConnection().search_issues(config.jira_resolved_today)
             msg += f'\n<b>{len(resolved)} выложено</b>:\n'
             msg += '\n'.join([f'<a href="{config.jira_host}/browse/{issue.key}">{issue.fields.summary}</a>' for issue in resolved])
 
@@ -311,7 +311,7 @@ def call_who_is_next():
             if not name_task_will_release_next:
                 logger.error('I can\'t find task_will_release_next')
             else:
-                issues = JiraConnection().search_issues(config.jira_filter_true_waiting, maxResults=1000)
+                issues = JiraConnection().search_issues(config.jira_filter_true_waiting)
 
                 for issue in issues:
                     if name_task_will_release_next in issue.fields.summary:
@@ -345,11 +345,10 @@ def who_is_next():
 
     metaconfig_yaml_apps = metaconfig_yaml['apps']
 
-    tasks_wip = JiraConnection().search_issues(config.jira_filter_wip, maxResults=1000)
-    true_waiting_task = JiraConnection().search_issues(config.jira_filter_true_waiting, maxResults=1000)
-    task_full_deploy = JiraConnection().search_issues(config.jira_filter_full, maxResults=1000)
-    task_without_waiting_full = JiraConnection().search_issues(config.jira_filter_without_waiting_full,
-                                                       maxResults=1000)
+    tasks_wip = JiraConnection().search_issues(config.jira_filter_wip)
+    true_waiting_task = JiraConnection().search_issues(config.jira_filter_true_waiting)
+    task_full_deploy = JiraConnection().search_issues(config.jira_filter_full)
+    task_without_waiting_full = JiraConnection().search_issues(config.jira_filter_without_waiting_full)
     # add to set only if app_version will return not None
     set_wip_tasks = {app_version(in_progress_issues.fields.summary)
                      for in_progress_issues in tasks_wip
