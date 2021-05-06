@@ -1,0 +1,18 @@
+<table class="relative-table wrapped" style="width: 100.0%;">
+  <colgroup>
+    <col style="width: 25%;"/>
+    <col style="width: 75%;"/>
+  </colgroup>
+  <tbody>
+    {% for item in items %}<tr>
+      <th>
+        <p>{{ item.app_name }}</p>
+      </th>
+      <td>
+        <p>
+          <p>{{ item.remotes }}</p>
+        </p>
+      </td>
+    </tr>{% endfor %}
+  </tbody>
+</table>
