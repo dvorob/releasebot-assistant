@@ -123,12 +123,15 @@ def timetable_reminder():
         for acc in db().get_all_users_with_subscription('timetable'):
             try:
                 db_users = db().get_users('account_name', acc, 'equal')
-                header = {'calendar_email': db_users[0]['email'], 'afterdays': str(0)}
-                responses = []
-                with requests.session() as session:
-                    resp = session.get(config.api_get_timetable, headers=header)
-                    msg = (resp.json())['message']
-                informer.send_message_to_users([acc], msg)
+                if db_users[0]['working_status'] != 'dismissed':
+                    header = {'calendar_email': db_users[0]['email'], 'afterdays': str(0)}
+                    responses = []
+                    with requests.session() as session:
+                        resp = session.get(config.api_get_timetable, headers=header)
+                        msg = (resp.json())['message']
+                    informer.send_message_to_users([acc], msg)
+                else:
+                    logger.info('Timetable doesn\'t work for dismissed user %s', db_users)
             except Exception as e:
                 logger.exception('exception in timetable %s', str(e))
     else:
