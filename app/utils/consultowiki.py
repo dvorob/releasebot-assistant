@@ -58,21 +58,26 @@ class ServiceDiscoveryAppRemotesTable:
         return app_desc
 
     @staticmethod
-    def _get_remotes(desc: dict) -> tuple:
+    def _get_remotes(desc: dict) -> list:
         """
-        Получает список remote из desc.yml и формирует из него читаемый
-        список строк формата [remote1:proto, remote2:proto, ..., remoteN:proto]
+        Получает список remote из desc.yml и формирует из него список: приложение -> remote
         Принимает:
           desc: dict - loaded desc.yml
         Возвращает:
-          tuple: (app_name, remotes) - (str имя приложения, list remote:proto)
+          list: (dict) - {'name': app name, 'remote': remote app name, 'proto': protocol}
         """
         remotes = []
         remotes_raw = desc['application']['remotes']
         for app, proto in remotes_raw.items():
             for pr in proto:
-                remotes.append(app+':'+pr)
-        return desc['application']['name'], remotes
+                remotes.append({'name': desc['application']['name'],
+                                'remote': app,
+                                'proto': pr})
+        if remotes_raw == {}:
+            remotes.append({'name': desc['application']['name'],
+                            'remote': ' ',
+                            'proto': ' '})
+        return remotes
 
     def _create_table_data(self) -> bool:
         """
@@ -83,12 +88,9 @@ class ServiceDiscoveryAppRemotesTable:
         """
         for consul_dc, consul_server in self.consul_servers.items():
             try:
-                self.table.append(({'app_name': 'base' if consul_dc == 'prod' else consul_dc, 'remotes': ' '}))
                 desc = self._get_all_app_descs(consul_dc, consul_server)
                 for app in desc:
-                    app_name, app_remotes = self._get_remotes(app)
-                    self.table.append({'app_name': app_name,
-                                       'remotes': ', '.join(app_remotes) if app_remotes != [] else ' '})
+                    self.table += self._get_remotes(app)
             except:
                 self.logger.exception('Exception in _create_table_data')
                 return False
@@ -98,7 +100,7 @@ class ServiceDiscoveryAppRemotesTable:
         """
         Создаёт html таблицу по jinja2-шаблону с данымми из table.
         Вовзращает:
-          html: str - таблица в html
+          html: str - таблица с фильтром в html
         """
         res = self._create_table_data()
         if res is not False:
@@ -147,3 +149,4 @@ class ServiceDiscoveryAppRemotesTable:
             else:
                 self.logger.error(f'Status code: {response.status_code}, raw response: {response.text}')
                 return False
+
