@@ -26,6 +26,7 @@ import utils.informer as informer
 from utils import logging
 from utils.database import PostgresPool as db
 from utils.jiratools import JiraConnection, jira_get_components
+from utils.consultowiki import ServiceDiscoveryAppRemotesTable
 
 
 def calculate_statistics():
@@ -144,11 +145,13 @@ def duty_reminder_daily_morning():
     duty_informing_from_schedule(1, 'ADMSYS(портал)', msg)
     duty_informing_from_schedule(1, 'ADMSYS(инфра)', msg)
 
+
 def duty_reminder_daily_evening():
     msg = 'Напоминаю, ты <b>завтра</b> дежуришь по проду. Будь готов :)'
     duty_informing_from_schedule(1, 'ADMSYS(биллинг)', msg)
     duty_informing_from_schedule(1, 'ADMSYS(портал)', msg)
     duty_informing_from_schedule(1, 'ADMSYS(инфра)', msg)
+
 
 def duty_reminder_weekend():
     """
@@ -180,6 +183,7 @@ def duty_reminder_tststnd_daily():
        Если в результате чекапа есть повторяющиеся проблемы – сделай задачи на плановую починку."
     duty_informing_from_schedule(1, 'ADMSYS(tststnd)', msg)
 
+
 def sync_duties_from_exchange():
     """
         Ходит в Exchange и выгребает информацию о дежурствах. Помещает в PG duty_list
@@ -192,7 +196,7 @@ def sync_duties_from_exchange():
 
         # Go to Exchange calendar and get duites for 30 next days
         for i in range(0, 30):
-            msg = 'Дежурят сейчас:\n'   
+            msg = 'Дежурят сейчас:\n'
             # Вычисляем правильный день для дежурств, с учетом наших 10-часовых особенностей
             if int(datetime.today().strftime("%H")) < int(10):
                 duty_date = datetime.today() + timedelta(i) - timedelta(1)
@@ -287,7 +291,7 @@ def app_version(full_name_app):
 def update_app_list_by_commands():
     """
     Запускается по расписанию, выгребает из Jira названия компонент и ответственные команды (из справочника COM)
-    Обновляет команды в таблице app_list в БД бота. 
+    Обновляет команды в таблице app_list в БД бота.
     """
     try:
         components = jira_get_components()
@@ -437,6 +441,7 @@ def who_is_next():
 #                      1C Calendar
 #########################################################################################
 
+
 def sync_calendar_daily():
     """
         Ежедневное обновление календаря в БД бота
@@ -449,7 +454,7 @@ def sync_calendar_daily():
     # Возьмем номер текущего дня с начала года
     today_day_number = datetime.now().timetuple().tm_yday-1
     # Переберём дни текущего и на 14 вперед, чтобы иметь запас на случай недоступности 1С или проблем интеграции
-    for day_number in range (today_day_number, today_day_number + 14):  
+    for day_number in range (today_day_number, today_day_number + 14):
         logger.debug('Today is %s', soup('workingcalendarday')[day_number]['typeofday'])
         if soup('workingcalendarday')[day_number]['typeofday'] in {'Рабочий', 'Предпраздничный'}:
             # Если сегодня рабочий день, положим в item work_day_or_not 1, set=remaster
@@ -475,6 +480,7 @@ def get_calendar_from_1c() -> str:
 #########################################################################################
 #                      USER FROM AD
 #########################################################################################
+
 
 def sync_users_from_ad():
     """
@@ -517,6 +523,16 @@ def sync_users_from_ad():
         logger.exception('exception in sync users from ad %s', str(e))
 
 
+def update_service_discovery_remotes_wiki():
+    """
+    Читает из consul desc.yml всех зарегистрированных приложений, формирует из списка приложений и remotes
+    html таблицу и отправляет её на wiki
+    """
+    consul_to_wiki = ServiceDiscoveryAppRemotesTable(config.jira_user, config.jira_pass)
+    html = consul_to_wiki.create_html_table()
+    consul_to_wiki.push_to_wiki(html)
+
+
 if __name__ == "__main__":
 
     # Отключаем предупреждения от SSL
@@ -551,6 +567,9 @@ if __name__ == "__main__":
 
     # Поскольку в 10:00 в календаре присутствует двое дежурных - за вчера и за сегодня, процедура запускается в 5, 25 и 45 минут, чтобы не натыкаться на дубли и не вычищать их
     scheduler.add_job(sync_duties_from_exchange, 'cron', day_of_week='*', hour='*', minute='5-59/20')
+
+    # Обновление страницы ServiceDiscovery.AppsRemotes
+    scheduler.add_job(update_service_discovery_remotes_wiki, 'cron', day_of_week='*', hour='19', minute='0')
 
     # Запускаем расписание
     scheduler.start()
