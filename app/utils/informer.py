@@ -56,16 +56,3 @@ def inform_subscribers(notification: str, message: str):
         logger.info('Inform to subscribers %s %s response=%s', notification, message, resp)
     except Exception as e:
         logger.exception('Exception in inform to subscribers %s', str(e))
-
-
-def send_timetable_to_users(accounts: list):
-    """
-        (accounts=['ymvorobevda', ...])
-    """
-    logger.info('-- SEND TIMETABLE TO USER %s ', accounts)
-    try:
-        data = {'accounts': accounts}
-        resp = requests.post(config.informer_send_message_url, data=json.dumps(data))
-        logger.info('Sent timetable to %s response=%s', accounts, resp)
-    except Exception as e:
-        logger.exception('Exception in send timetable to users %s', str(e))
