@@ -15,41 +15,41 @@ jira_host = 'https://jira.yamoney.ru'
 jira_user = getenv('secret_jira_user')
 jira_pass = getenv('secret_jira_pass')
 jira_options = {'server': jira_host, 'verify': False}
-jira_filter_returned = 'project = ADMSYS AND ' \
+jira_filter_returned = 'project in (ADMSYS, DEPLOY) AND ' \
                        'issuetype = "Release (conf)" AND ' \
                        '(status not in (Closed, Resolved) OR updated >= startOfDay() ' \
                        'AND status in (Resolved)) AND ' \
                        'text ~ возвращена ORDER BY summary DESC, key ASC'
 
-jira_resolved_today = 'project = ADMSYS AND ' \
+jira_resolved_today = 'project in (ADMSYS, DEPLOY) AND ' \
                       'issuetype = "Release (conf)" AND ' \
                       'status = Resolved AND updated >= startOfDay() AND ' \
                       'resolution not in (Rollback) ' \
                       'ORDER BY summary DESC, key ASC'
 
-jira_rollback_today = 'project = ADMSYS AND ' \
+jira_rollback_today = 'project in (ADMSYS, DEPLOY) AND ' \
                       'issuetype = "Release (conf)" AND ' \
                       'resolutiondate >= startOfDay() AND ' \
                       'updated >= startOfDay() AND ' \
                       'resolution = Rollback ' \
                       'ORDER BY summary DESC, key ASC'
 
-jira_filter_full = 'project = ADMSYS AND ' \
+jira_filter_full = 'project in (ADMSYS, DEPLOY) AND ' \
                    'issuetype = "Release (conf)" AND ' \
                    'status = "FULL DEPLOY" ' \
                    'ORDER BY priority DESC, updatedDate ASC'
 
-jira_filter_without_waiting_full = 'project = ADMSYS AND ' \
+jira_filter_without_waiting_full = 'project in (ADMSYS, DEPLOY) AND ' \
                                    'issuetype = "Release (conf)" AND ' \
                                    'status not in  ("FULL DEPLOY", "Waiting release", Closed, Resolved)  ' \
                                    'ORDER BY priority DESC, updatedDate ASC'
 
-jira_filter_true_waiting = 'project = ADMSYS AND ' \
+jira_filter_true_waiting = 'project in (ADMSYS, DEPLOY) AND ' \
                            'issuetype = "Release (conf)" AND ' \
                            'status = "Waiting release" ' \
                            'ORDER BY priority DESC, updatedDate ASC'
 
-jira_filter_wip = 'project = ADMSYS AND ' \
+jira_filter_wip = 'project in (ADMSYS, DEPLOY) AND ' \
                   'issuetype = "Release (conf)" AND ' \
                   'status not in (Closed, Resolved, "Waiting release") ' \
                   'ORDER BY priority DESC, updatedDate ASC'
