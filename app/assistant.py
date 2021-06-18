@@ -529,6 +529,7 @@ def update_service_discovery_remotes_wiki():
     Читает из consul desc.yml всех зарегистрированных приложений, формирует из списка приложений и remotes
     html таблицу и отправляет её на wiki
     """
+    logger.info('-- UPDATE SERVICE DISCOVERY REMOTES WIKI has started')
     consul_to_wiki = ServiceDiscoveryAppRemotesTable(config.jira_user, config.jira_pass)
     html = consul_to_wiki.create_html_table()
     consul_to_wiki.push_to_wiki(html)
@@ -570,7 +571,7 @@ if __name__ == "__main__":
     scheduler.add_job(sync_duties_from_exchange, 'cron', day_of_week='*', hour='*', minute='5-59/20')
 
     # Обновление страницы ServiceDiscovery.AppsRemotes
-    scheduler.add_job(update_service_discovery_remotes_wiki, 'cron', day_of_week='*', hour='*', minute='30')
+    scheduler.add_job(update_service_discovery_remotes_wiki, 'cron', day_of_week='*', hour='*', minute='10')
 
     # Запускаем расписание
     scheduler.start()
