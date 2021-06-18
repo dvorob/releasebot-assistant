@@ -65,15 +65,6 @@ informer_send_message_url = f'{informer}/send_message'
 informer_send_timetable_url = f'{informer}/send_timetable'
 inform_subscribers_url = f'{informer}/inform_subscribers'
 
-#MySQL configuration
-# mysql = PooledMySQLDatabase(
-#     'xerxes',
-#     host='mysql.xerxes.svc.ugr-base1.kube.yamoney.ru',
-#     user=getenv('secret_mysql_user'),
-#     passwd=getenv('secret_mysql_pass'),
-#     max_connections=8,
-#     stale_timeout=300)
-
 #PG configuration
 postgres = PooledPostgresqlDatabase(
     'release_bot',
