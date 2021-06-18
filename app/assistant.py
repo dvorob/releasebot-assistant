@@ -570,7 +570,7 @@ if __name__ == "__main__":
     scheduler.add_job(sync_duties_from_exchange, 'cron', day_of_week='*', hour='*', minute='5-59/20')
 
     # Обновление страницы ServiceDiscovery.AppsRemotes
-    scheduler.add_job(update_service_discovery_remotes_wiki, 'cron', day_of_week='*', hour='*', minute='10')
+    scheduler.add_job(update_service_discovery_remotes_wiki, 'cron', day_of_week='*', hour='*', minute='30')
 
     # Запускаем расписание
     scheduler.start()
