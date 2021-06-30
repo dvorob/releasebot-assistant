@@ -209,7 +209,7 @@ def sync_duties_from_exchange():
             old_msg, new_msg = ex_duty(cal_start, cal_end)
             msg += old_msg
 
-            logger.debug('I find duty for %s : %s', duty_date.strftime("%Y-%m-%d"), msg)
+            logger.info('I find duty for %s : %s', duty_date.strftime("%Y-%m-%d"), msg)
             # Разобрать сообщение из календаря в формат ["area (зона ответственности)", "имя дежурного", "аккаунт деужурного"]
             duty_list = []
             for msg in new_msg:
@@ -238,14 +238,17 @@ def ex_connect():
         Connect to exchange
         :return:
     """
-    # Отключаем верификацию SLL сертификатов Exchange
-    BaseProtocol.HTTP_ADAPTER_CLS = NoVerifyHTTPAdapter
+    try:
+        # Отключаем верификацию SLL сертификатов Exchange
+        BaseProtocol.HTTP_ADAPTER_CLS = NoVerifyHTTPAdapter
 
-    ex_cred = Credentials(config.ex_user, config.ex_pass)
-    ex_cfg = Configuration(server=config.ex_host, credentials=ex_cred)
-    ex_acc = Account(primary_smtp_address=config.ex_cal, config=ex_cfg,
-                     access_type=DELEGATE, autodiscover=False)
-    return ex_acc
+        ex_cred = Credentials(config.ex_user, config.ex_pass)
+        ex_cfg = Configuration(server=config.ex_host, credentials=ex_cred)
+        ex_acc = Account(primary_smtp_address=config.ex_cal, config=ex_cfg,
+                         access_type=DELEGATE, autodiscover=False)
+        return ex_acc
+    except Exception as e:
+        logger.exception('exception in ex_connect %s', str(e))
 
 
 def ex_duty(d_start, d_end):
