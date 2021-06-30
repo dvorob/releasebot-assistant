@@ -80,7 +80,7 @@ def get_dismissed_users():
                     logger.info('%s was dismissed', v['account_name'])
                     db().set_users(v['account_name'], full_name=None, tg_login=None, working_status='dismissed', email=None)
                 else:
-                    logger.info('get dismissed found that %s is still working', v["account_name"])
+                    logger.debug('get dismissed found that %s is still working', v["account_name"])
     except Exception as e:
         logger.exception('Error in GET DISMISSED USERS', str(e))
 
@@ -568,7 +568,7 @@ if __name__ == "__main__":
     scheduler.add_job(update_app_list_by_commands, 'cron', day_of_week='*', hour='*', minute='*/5')
 
     # Поскольку в 10:00 в календаре присутствует двое дежурных - за вчера и за сегодня, процедура запускается в 5, 25 и 45 минут, чтобы не натыкаться на дубли и не вычищать их
-    scheduler.add_job(sync_duties_from_exchange, 'cron', day_of_week='*', hour='*', minute='5-59/20')
+    scheduler.add_job(sync_duties_from_exchange, 'cron', day_of_week='*', hour='*', minute='*/3')
 
     # Обновление страницы ServiceDiscovery.AppsRemotes
     scheduler.add_job(update_service_discovery_remotes_wiki, 'cron', day_of_week='*', hour='*', minute='10')
