@@ -485,6 +485,19 @@ def get_calendar_from_1c() -> str:
 #                      USER FROM AD
 #########################################################################################
 
+def sync_users_from_staff():
+    """
+        Сходить в Staff (staff.yooteam.ru) за сотрудниками
+    """
+    logger.info('-- SYNC USERS FROM STAFF')
+    try:
+        users_req = requests.get(config.staff_url + '1c82_lk/hs/staff/v1/persons?target=chat-bot', 
+                                    auth=HttpNtlmAuth(config.ex_user, config.ex_pass), verify=False)
+        users_dict = users_req.json()
+        logger.info(users_dict)
+    except Exception as e:
+        logger.exception('Error in sync users from staff %s', e)
+
 
 def sync_users_from_ad():
     """
@@ -544,7 +557,7 @@ if __name__ == "__main__":
     warnings.filterwarnings('ignore')
     logger = logging.setup()
     logger.info('- - - START ASSISTANT - - - ')
-
+    sync_users_from_staff()
     # --- SCHEDULING ---
     # Инициализируем расписание
     scheduler = BlockingScheduler(timezone='Europe/Moscow')
