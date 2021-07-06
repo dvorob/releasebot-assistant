@@ -492,8 +492,10 @@ def sync_users_from_staff():
     """
     logger.info('-- SYNC USERS FROM STAFF')
     try:
+        users_req = {}
         users_req = requests.get(config.staff_url + '1c82_lk/hs/staff/v1/persons?target=chat-bot', 
                                     auth=HttpNtlmAuth(config.ex_user, config.ex_pass), verify=False)
+        logger.info(users_req)
         users_dict = users_req.json()
         logger.info(users_dict)
     except Exception as e:
