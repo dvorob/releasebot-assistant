@@ -20,6 +20,7 @@ from exchangelib.ewsdatetime import UTC_NOW
 from exchangelib.protocol import BaseProtocol, NoVerifyHTTPAdapter
 from ldap3 import Server, Connection, SIMPLE, SYNC, ASYNC, SUBTREE, ALL
 from peewee import *
+from requests_ntlm import HttpNtlmAuth
 # Internal
 import config as config
 import utils.informer as informer
