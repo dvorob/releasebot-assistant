@@ -65,6 +65,8 @@ informer_send_message_url = f'{informer}/send_message'
 informer_send_timetable_url = f'{informer}/send_timetable'
 inform_subscribers_url = f'{informer}/inform_subscribers'
 
+staff_url = 'https://staff.yooteam.ru/'
+
 #PG configuration
 postgres = PooledPostgresqlDatabase(
     'release_bot',
