@@ -208,18 +208,18 @@ class PostgresPool:
         logger.debug('set users started for %s ', account_name)
         try:
             logger.info(f'{account_name}, {full_name}, {tg_login}, {working_status}, {email}')
-            # self.db.connect(reuse_if_open=True)
-            # db_users, _ = Users.get_or_create(account_name=account_name)
-            # if full_name:
-            #     db_users.full_name = full_name.replace('ё', 'е')
-            # if tg_login:
-            #     db_users.tg_login = tg_login
-            # if working_status:
-            #     db_users.working_status = working_status
-            # if email:
-            #     db_users.email = email
-            # db_users.date_update = datetime.now()
-            # db_users.save()
+            self.db.connect(reuse_if_open=True)
+            db_users, _ = Users.get_or_create(account_name=account_name)
+            if full_name:
+                db_users.full_name = full_name.replace('ё', 'е')
+            if tg_login:
+                db_users.tg_login = tg_login
+            if working_status:
+                db_users.working_status = working_status
+            if email:
+                db_users.email = email
+            db_users.date_update = datetime.now()
+            db_users.save()
         except Exception as e:
             logger.exception('exception in set_users %s', str(e))
         finally:

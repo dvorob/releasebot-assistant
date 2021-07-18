@@ -306,142 +306,6 @@ def update_app_list_by_commands():
         logger.exception('Error in update app list %s', str(e))
 
 
-def call_who_is_next():
-    """
-    УБРАТЬ ОТСЮДА ЦЕЛИКОМ. ЕЙ МЕСТО В REMASTER
-    """
-    try:
-        run_mode = db().get_parameters('run_mode')[0]['value']
-        logger.debug('Remaster: run_mode = %s', run_mode)
-
-        if not run_mode:
-            run_mode = 'off'
-            # 0 - спать, 1 - доделывать, 2 - штатный режим
-
-        if run_mode == 'on':
-            name_task_will_release_next = who_is_next()
-            if not name_task_will_release_next:
-                logger.error('I can\'t find task_will_release_next')
-            else:
-                issues = JiraConnection().search_issues(config.jira_filter_true_waiting)
-
-                for issue in issues:
-                    if name_task_will_release_next in issue.fields.summary:
-                        finding_issue = issue
-                        logger.info('I find, this is %s', finding_issue)
-                        break
-
-                notifications_sent = db().get_release_notifications_sent(rl_obj.jira_task)
-                if 'next_release' in notifications_sent:
-                    logger.warning('Already sent notification to %s', str(finding_issue))
-                else:
-                    logger.info('I ready sent notification about next release: %s ', finding_issue)
-                    db().append_release_notifications_sent(finding_issue, 'next_release')
-
-                    message = f"Релиз [{finding_issue.fields.summary}]({finding_issue.permalink()}) \
-                                будет искать согласующих в ближайшие 10-20 минут. Но это не точно."
-                    informer.send_message_to_approvers(task_json['jira_task'], message)
-        else:
-            # Если продолжать нет необходимости, просто спим
-            logger.debug('sleeping')
-    except Exception:
-        logger.exception('call_who_is_next')
-
-
-def who_is_next():
-    """
-        Test write function for notificication about you release will be next
-    """
-
-    metaconfig_yaml = {'apps': []}
-
-    metaconfig_yaml_apps = metaconfig_yaml['apps']
-
-    tasks_wip = JiraConnection().search_issues(config.jira_filter_wip)
-    true_waiting_task = JiraConnection().search_issues(config.jira_filter_true_waiting)
-    task_full_deploy = JiraConnection().search_issues(config.jira_filter_full)
-    task_without_waiting_full = JiraConnection().search_issues(config.jira_filter_without_waiting_full)
-    # add to set only if app_version will return not None
-    set_wip_tasks = {app_version(in_progress_issues.fields.summary)
-                     for in_progress_issues in tasks_wip
-                     if app_version(in_progress_issues.fields.summary)}
-    logger.info('It\'s all in progress task: %s', set_wip_tasks)
-
-    # множество блокировок на данный момент времени для всех in_progress task
-    set_wip_lock = set()
-    for release_name in set_wip_tasks:
-        if release_name:
-            for k, v in metaconfig_yaml_apps.items():
-                if release_name in k:
-                    if len(v['queues']) == 1:
-                        set_wip_lock.add(''.join(v['queues']))
-                    else:
-                        for first_lock in v['queues']:
-                            set_wip_lock.add(first_lock)
-    logger.info('It\'s lock on this moment for wip task: %s', set_wip_lock)
-
-    set_full_deploy_tasks = {app_version(full_deploy_issues.fields.summary)
-                             for full_deploy_issues in task_full_deploy
-                             if app_version(full_deploy_issues.fields.summary)}
-    logger.info('It\'s all in full deploy task: %s', set_full_deploy_tasks)
-
-    # множество блокировок на данный момент времени для всех full_deploy task
-    set_full_deploy_lock = set()
-    for i in set_full_deploy_tasks:
-        for k, v in metaconfig_yaml_apps.items():
-            if i in k:
-                if len(v['queues']) == 1:
-                    set_full_deploy_lock.add(''.join(v['queues']))
-                else:
-                    for first_lock in v['queues']:
-                        set_full_deploy_lock.add(first_lock)
-    logger.info('It\'s lock on this moment for full_deploy task: %s', set_full_deploy_lock)
-
-    set_without_waiting_full = {app_version(without_waiting_full_issues.fields.summary)
-                                for without_waiting_full_issues in task_without_waiting_full
-                                if app_version(without_waiting_full_issues.fields.summary)}
-    logger.info('It\'s all not in full and waiting status task: %s', set_without_waiting_full)
-
-    # множество блокировок на данный момент времени для всех
-    # not in full and waiting task
-    set_without_waiting_lock = set()
-    for i in set_without_waiting_full:
-        for k, v in metaconfig_yaml_apps.items():
-            if i in k:
-                if len(v['queues']) == 1:
-                    set_without_waiting_lock.add(''.join(v['queues']))
-                else:
-                    for first_lock in v['queues']:
-                        set_without_waiting_lock.add(first_lock)
-    logger.info('It\'s lock on this moment for not in '
-                'full, waiting task: %s', set_without_waiting_lock)
-
-    # имена всех ожидающих освобождения очереди таски
-    name_wait_app = [app_version(wait_issues.fields.summary)
-                     for wait_issues in true_waiting_task]
-    logger.info('Name_wait_app %s', name_wait_app)
-
-    # для всех ожидающих освобождения очереди тасок
-    # если имя таски есть в metaconfig.yaml и длина ее очереди = 1,
-    # то проверим
-    # нужно добавить еще логику, что очередь из ожидающих не входит в те таски,
-    # что на стэйдж 2-4.
-    for task in name_wait_app:
-        if task:
-            for k, v in metaconfig_yaml_apps.items():
-                if task in k:
-                    # lock for waiting bot task
-                    test_set = set(v['queues'])
-                    logger.debug(test_set)
-                    if test_set.issubset(set_full_deploy_lock):
-                        logger.info('UP! This task: %s fully include in lock '
-                                    'for full_deploy task', task)
-                        if not test_set.issubset(set_without_waiting_lock):
-                            logger.info('!FIND! I think this is next_release: %s '
-                                        'because her lock in full deploy and not in'
-                                        'full and waiting task.', task)
-                            return task
-
 #########################################################################################
 #                      1C Calendar
 #########################################################################################
@@ -483,8 +347,9 @@ def get_calendar_from_1c() -> str:
         logger.exception('Error in GET CALENDAR FROM 1C %s', e)
 
 #########################################################################################
-#                      USER FROM AD
+#                      USER FROM Staff
 #########################################################################################
+
 def sync_users_from_staff():
     """
         Сходить в Staff (staff.yooteam.ru) за сотрудниками
@@ -580,9 +445,7 @@ if __name__ == "__main__":
     # Забрать календарь из 1С
     scheduler.add_job(sync_calendar_daily, 'cron', day_of_week='*', hour=9, minute=10)
 
-    # Проверка, не уволились ли сотрудники. Запускается раз в час
-    scheduler.add_job(get_dismissed_users, 'cron', day_of_week='*', hour='*', minute='25')
-
+    # Забирает всех пользователей из Стаффа, заливает в БД бота в таблицу Users. Используется для информинга
     scheduler.add_job(sync_users_from_staff, 'cron', day_of_week='*', hour='*', minute='55')
 
     # Обновить команды, ответственные за компоненты
