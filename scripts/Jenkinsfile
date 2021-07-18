@@ -1,4 +1,4 @@
-node('docker') {
+node('docker-old') {
     ansiColor('xterm') {
         step([$class: 'WsCleanup'])
         step([$class: 'StashNotifier'])

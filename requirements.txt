@@ -6,7 +6,7 @@ jira
 ldap3
 peewee
 psycopg2-binary
-PyMySQL==0.9.3
+PyMySQL
 python_telegram_bot
 jinja2
 python-consul
