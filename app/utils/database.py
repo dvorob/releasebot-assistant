@@ -207,7 +207,7 @@ class PostgresPool:
         # Если передадим tg_id для существующего пользователя, заполнится только это поле
         logger.debug('set users started for %s ', account_name)
         try:
-            logger.info(account_name, full_name, tg_login, working_status, email)
+            logger.info(f'{account_name}, {full_name}, {tg_login}, {working_status}, {email}')
             # self.db.connect(reuse_if_open=True)
             # db_users, _ = Users.get_or_create(account_name=account_name)
             # if full_name:
