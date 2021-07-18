@@ -485,7 +485,6 @@ def get_calendar_from_1c() -> str:
 #########################################################################################
 #                      USER FROM AD
 #########################################################################################
-
 def sync_users_from_staff():
     """
         Сходить в Staff (staff.yooteam.ru) за сотрудниками
@@ -495,15 +494,18 @@ def sync_users_from_staff():
         users_req = {}
         users_req = requests.get(config.staff_url + '1c82_lk/hs/staff/v1/persons?target=chat-bot', 
                                     auth=HttpNtlmAuth(config.ex_user, config.ex_pass), verify=False)
-        logger.info(users_req)
         users_dict = users_req.json()
-        logger.info(users_dict)
+        for user in users_dict:
+            working_status = 'dismissed' if user['dismissed'] else 'working'
+            db().set_users(user['login'], '', user['telegrams'][0], working_status, user['workEmail'])
     except Exception as e:
         logger.exception('Error in sync users from staff %s', e)
 
 
 def sync_users_from_ad():
     """
+        OBSOLETE
+        Использовалась, когда стафф был не готов. Оставим на всякий случай/
         Сходить в AD, забрать логины, tg-логины, рабочий статус с преобразованием в (working, dismissed)
     """
     logger.info('-- SYNC USERS FROM AD')
@@ -581,7 +583,7 @@ if __name__ == "__main__":
     # Проверка, не уволились ли сотрудники. Запускается раз в час
     scheduler.add_job(get_dismissed_users, 'cron', day_of_week='*', hour='*', minute='25')
 
-    scheduler.add_job(sync_users_from_ad, 'cron', day_of_week='*', hour='*', minute='55')
+    scheduler.add_job(sync_users_from_staff, 'cron', day_of_week='*', hour='*', minute='55')
 
     # Обновить команды, ответственные за компоненты
     scheduler.add_job(update_app_list_by_commands, 'cron', day_of_week='*', hour='*', minute='*/5')
