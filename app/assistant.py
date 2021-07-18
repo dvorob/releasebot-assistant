@@ -59,33 +59,6 @@ def calculate_statistics():
         logger.exception('Error in CALCULATE STATISTICS %s', e)
 
 
-def get_dismissed_users():
-    """
-    Проверяет, не уволился ли пользователь.
-    Берёт всех пользователей из внутренней БД бота. Проверяет каждый account_name на предмет увольнения в AD (учетка попадет в OU="Уволенные...")
-    """
-    logger.info('-- GET DISMISSED USERS')
-    try:
-        server = Server(config.ad_host, use_ssl=True)
-        conn = Connection(server, user=config.ex_user, password=config.ex_pass)
-        conn.bind()
-        db_users = []
-        td = datetime.today() - timedelta(1)
-        db_users = db().get_users('working_status', 'working', 'equal')
-        logger.info('Found potential dismissed users in count %s', len(db_users))
-
-        for v in db_users:
-            conn.search(config.base_dn,'(&(objectCategory=person)(objectClass=user)(sAMAccountName='+v["account_name"]+'))',SUBTREE,attributes=config.ldap_attrs)
-            for entry in conn.entries:
-                if re.search("Уволенные", str(entry.distinguishedName)):
-                    logger.info('%s was dismissed', v['account_name'])
-                    db().set_users(v['account_name'], full_name=None, tg_login=None, working_status='dismissed', email=None)
-                else:
-                    logger.debug('get dismissed found that %s is still working', v["account_name"])
-    except Exception as e:
-        logger.exception('Error in GET DISMISSED USERS', str(e))
-
-
 def get_duty_date(date):
     # Если запрошены дежурные до 10 утра, то это "вчерашние дежурные"
     # Это особенность дежурств в Департаменте
@@ -362,7 +335,7 @@ def sync_users_from_staff():
         users_dict = users_req.json()
         for user in users_dict:
             working_status = 'dismissed' if user['dismissed'] else 'working'
-            db().set_users(user['login'], '', user['telegrams'][0], working_status, user['workEmail'])
+            db().set_users(user['login'], user['telegrams'][0], working_status, user['workEmail'])
     except Exception as e:
         logger.exception('Error in sync users from staff %s', e)
 

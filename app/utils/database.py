@@ -201,17 +201,17 @@ class PostgresPool:
         finally:
             self.db.close()
 
-    def set_users(self, account_name, full_name, tg_login, working_status, email):
+    def set_users(self, account_name, tg_login, working_status, email):
         # Записать пользователя в таблицу Users. Переберет параметры и запишет только те из них, что заданы. 
         # Иными словами, если вычитали пользователя из AD с полным набором полей, запись будет создана, поля заполнены.
         # Если передадим tg_id для существующего пользователя, заполнится только это поле
         logger.debug('set users started for %s ', account_name)
         try:
-            logger.info(f'{account_name}, {full_name}, {tg_login}, {working_status}, {email}')
+            logger.info(f'{account_name}, {tg_login}, {working_status}, {email}')
             self.db.connect(reuse_if_open=True)
             db_users, _ = Users.get_or_create(account_name=account_name)
-            if full_name:
-                db_users.full_name = full_name.replace('ё', 'е')
+            # if full_name:
+            #     db_users.full_name = full_name.replace('ё', 'е')
             if tg_login:
                 db_users.tg_login = tg_login
             if working_status:
