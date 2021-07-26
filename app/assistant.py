@@ -59,6 +59,13 @@ def calculate_statistics():
         logger.exception('Error in CALCULATE STATISTICS %s', e)
 
 
+def looking_for_new_tasks():
+    """
+       Проверить релизную доску на наличие тасок без исполнителя
+    """
+    logger.info('-- LOOKING FOR NEW TASKS')
+
+
 def get_duty_date(date):
     # Если запрошены дежурные до 10 утра, то это "вчерашние дежурные"
     # Это особенность дежурств в Департаменте
@@ -187,6 +194,7 @@ def sync_duties_from_exchange():
             # Разобрать сообщение из календаря в формат ["area (зона ответственности)", "имя дежурного", "аккаунт деужурного"]
             duty_list = []
             for msg in new_msg:
+                msg = re.sub(r'—', '-', msg)
                 dl = {'duty_date': duty_date, 'full_text': msg, 'area' : '', 'full_name': '', 'account_name': '', 'tg_login': ''}
                 for area in duty_areas:
                     if len(re.findall(area+".*-", msg)) > 0:

@@ -63,6 +63,15 @@ class Parameters(BaseModel):
     value = CharField()
     description = CharField()
 
+class Tasks_List(BaseModel):
+    id = IntegerField(primary_key=True)
+    jira_task = CharField(unique=True)
+    date_create = DateField(default=None)
+    date_update = DateField(default=None)
+    assignee = CharField(unique=True)
+    status = CharField(unique=True)
+    notifications_sent = TextField(default=None)
+
 class Releases_List(BaseModel):
     id = IntegerField(primary_key=True)
     jira_task = CharField(unique=True)
@@ -419,6 +428,81 @@ class PostgresPool:
             return result
         finally:
             self.db.close()
+
+    # ---------------------------------
+    # ----- Tasks List ---------------- 
+
+    def upsert_task(self, jira_task, date_create, date_update, assignee, status):
+        result = []
+        try:    
+            self.db.connect(reuse_if_open=True)
+            result = (Tasks_List
+                .insert(jira_task=jira_task, date_create=date_create, date_update=date_update, assignee=assignee, status=status)
+                .on_conflict(
+                    conflict_target=[Tasks_List.jira_task],
+                    preserve=[Tasks_List.date_create],
+                    update={Tasks_List.date_update: date_update, Tasks_List.assignee: assignee, Tasks_List.status: status})
+                .execute())
+            return result
+        except Exception as e:
+            logger.exception('exception in upsert task %s', e)
+            return result
+        finally:
+            self.db.close()
+
+    def get_task_notifications_sent(self, jira_task):
+        # Вернет массив, построенный из строкового поля notifications_sent. Если оно пусто, вернет массив с пустой строкой
+        try:
+            self.db.connect(reuse_if_open=True)
+            db_result = Tasks_List.select(Tasks_List.notifications_sent).where(Tasks_List.jira_task == jira_task)
+            for r in db_result:
+                if r.notifications_sent:
+                    result = r.notifications_sent
+                else:
+                    result = ''
+            return (result).split(',')
+        except Exception as e:
+            logger.exception('exception in get task notification sent %s', e)
+            return []
+        finally:
+            self.db.close()
+
+    def set_task_notifications_sent(self, jira_task, notifications_sent):
+        # Обновит всю инфу в ячейке notifications_sent. Неважно, что передано в качестве значения - будет сохранено целиком
+        try:
+            self.db.connect(reuse_if_open=True)
+            result = (Tasks_List
+                     .update(notifications_sent = notifications_sent)
+                     .where(Tasks_List.jira_task == jira_task))
+            result.execute()
+        except Exception as e:
+            logger.exception('exception in set task notification sent %s', e)
+            return result
+        finally:
+            self.db.close()
+
+    def append_task_notifications_sent(self, jira_task, notifications_sent):
+        # Запишет инфу про отправленную нотификацию. Важно: функция работает с записью в ячейку как будто это сет данных
+        # т.е. всякое значение встречается лишь единожды, порядок при этом неважен
+        try:
+            self.db.connect(reuse_if_open=True)
+            notif_sent = self.get_task_notifications_sent(jira_task)
+            if notifications_sent in notif_sent.split(','):
+                notif_sent = notif_sent + ',' + notifications_sent
+            else:
+                notif_sent = notifications_sent
+            result = (Tasks_List
+                     .update(notifications_sent = notif_sent)
+                     .where(Tasks_List.jira_task == jira_task))
+            result.execute()
+        except Exception as e:
+            logger.exception('exception in append task notification sent %s', e)
+            return result
+        finally:
+            self.db.close()
+
+    # ---------------------------------
+    # ----- User Subscriptions --------
 
     def delete_user_subscription(self, account_name, subscription):
         # Выставить в users_subscription подписку пользователя
