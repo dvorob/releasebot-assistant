@@ -11,7 +11,7 @@ class ServiceDiscoveryAppRemotesTable:
         self.consul_servers = {'prod': 'consul.yamoney.ru', 'pcidss': 'consul-pcidss.yooteam.ru'}
         self.session = requests.Session()
         self.session.auth = (wiki_username, wiki_password)
-        self.wiki_page_url = 'https://wiki.yamoney.ru/rest/api/content/286591430'
+        self.wiki_page_url = 'https://wiki.yooteam.ru/rest/api/content/286591430'
         self.table = []
         self.logger = logging.setup()
         self.template_path = './app/utils/templates/wikitable.j2'
