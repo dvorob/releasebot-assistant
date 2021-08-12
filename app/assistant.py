@@ -157,9 +157,9 @@ def duty_reminder_tststnd_daily():
     """
     logger.info('duty reminder tststnd daily started')
     msg = f"Будь сильным: <b>ты дежуришь по стендам сегодня</b>.\nПроверь, что:\n\
-       1. Автообновление <b>int</b> прошло успешно и <a href='https://jira.yamoney.ru/issues/?jql=labels%20%3D%20jenkins.SchemeUpdate%20and%20status%20!%3D%20Closed%20and%20status%20!%3D%20Resolved'>здесь</a>\
+       1. Автообновление <b>int</b> прошло успешно и <a href='https://jira.yooteam.ru/issues/?jql=labels%20%3D%20jenkins.SchemeUpdate%20and%20status%20!%3D%20Closed%20and%20status%20!%3D%20Resolved'>здесь</a>\
        нет задач. Перезапусти обновление, если оно не прошло.\n\
-       2. Ночные синки успешны и <a href='https://jira.yamoney.ru/issues/?jql=labels%20%3D%20cloud%20and%20status%20!%3D%20Closed%20and%20status%20!%3D%20Resolved'>здесь</a> нет задач.\n\
+       2. Ночные синки успешны и <a href='https://jira.yooteam.ru/issues/?jql=labels%20%3D%20cloud%20and%20status%20!%3D%20Closed%20and%20status%20!%3D%20Resolved'>здесь</a> нет задач.\n\
        Днем проверь как <a href='https://jenkins-dev.yamoney.ru/job/CLOUD/job/Base/job/recreate_basetest/lastBuild'>пересоздалась btest</a>. Важно дотолкать ее до тестов, чтобы QA было что разбирать.\n\
        Если в результате чекапа есть повторяющиеся проблемы – сделай задачи на плановую починку."
     duty_informing_from_schedule(1, 'ADMSYS(tststnd)', msg)
