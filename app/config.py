@@ -10,7 +10,7 @@ ex_pass = getenv('secret_exchange_pass')
 ex_cal = 'adminsonduty@yamoney.ru'
 ex_tz = 'Europe/Moscow'
 
-jira_host = 'https://jira.yamoney.ru'
+jira_host = 'https://jira.yooteam.ru'
 # через secret задается в кубере
 jira_user = getenv('secret_jira_user')
 jira_pass = getenv('secret_jira_pass')
