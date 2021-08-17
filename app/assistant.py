@@ -379,12 +379,13 @@ def sync_user_names_from_staff():
     try:
         db_users = db().get_users('working_status', 'working', 'equal')
         for u in db_users:
-            user_req = {}
-            user_req = requests.get(config.staff_url + '1c82_lk/hs/staff/v1/persons/' + u['staff_login'], 
-                                        auth=HttpNtlmAuth(config.ex_user, config.ex_pass), verify=False)
-            user_staff = user_req.json()
-            full_name = user_staff['firstName'] + ' ' + user_staff['lastName']
-            db().set_users(account_name=user_staff['loginAD'], full_name=full_name)
+            if 'staff_login' in u:
+                user_req = {}
+                user_req = requests.get(config.staff_url + '1c82_lk/hs/staff/v1/persons/' + u['staff_login'], 
+                                            auth=HttpNtlmAuth(config.ex_user, config.ex_pass), verify=False)
+                user_staff = user_req.json()
+                full_name = user_staff['firstName'] + ' ' + user_staff['lastName']
+                db().set_users(account_name=user_staff['loginAD'], full_name=full_name)
     except Exception as e:
         logger.exception('Error in sync user names from staff %s', e)
 
@@ -469,7 +470,7 @@ if __name__ == "__main__":
 
     # Забирает всех пользователей из Стаффа, заливает в БД бота в таблицу Users. Используется для информинга
     scheduler.add_job(sync_users_from_staff, 'cron', day_of_week='*', hour='*', minute='55')
-    #scheduler.add_job(sync_user_names_from_staff, 'cron', day_of_week='*', hour='*', minute='*/10')
+    scheduler.add_job(sync_user_names_from_staff, 'cron', day_of_week='*', hour=5, minute=10)
 
     # Обновить команды, ответственные за компоненты
     scheduler.add_job(update_app_list_by_commands, 'cron', day_of_week='*', hour='*', minute='*/5')
