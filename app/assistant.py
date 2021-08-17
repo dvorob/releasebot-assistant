@@ -449,7 +449,7 @@ if __name__ == "__main__":
     warnings.filterwarnings('ignore')
     logger = logging.setup()
     logger.info('- - - START ASSISTANT - - - ')
-    sync_users_from_staff()
+    sync_user_names_from_staff()
     # --- SCHEDULING ---
     # Инициализируем расписание
     scheduler = BlockingScheduler(timezone='Europe/Moscow')
@@ -469,12 +469,13 @@ if __name__ == "__main__":
 
     # Забирает всех пользователей из Стаффа, заливает в БД бота в таблицу Users. Используется для информинга
     scheduler.add_job(sync_users_from_staff, 'cron', day_of_week='*', hour='*', minute='55')
+    #scheduler.add_job(sync_user_names_from_staff, 'cron', day_of_week='*', hour='*', minute='*/10')
 
     # Обновить команды, ответственные за компоненты
     scheduler.add_job(update_app_list_by_commands, 'cron', day_of_week='*', hour='*', minute='*/5')
 
     # Поскольку в 10:00 в календаре присутствует двое дежурных - за вчера и за сегодня, процедура запускается в 5, 25 и 45 минут, чтобы не натыкаться на дубли и не вычищать их
-    scheduler.add_job(sync_duties_from_exchange, 'cron', day_of_week='*', hour='*', minute='*/3')
+    scheduler.add_job(sync_duties_from_exchange, 'cron', day_of_week='*', hour='*', minute='5-59/20')
 
     # Обновление страницы ServiceDiscovery.AppsRemotes
     scheduler.add_job(update_service_discovery_remotes_wiki, 'cron', day_of_week='*', hour='*', minute='10')
