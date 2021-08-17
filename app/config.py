@@ -56,6 +56,12 @@ jira_filter_wip = 'project in (ADMSYS, DEPLOY) AND ' \
 
 jira_filter_components = 'project = COM AND "Target Project" in (BACKEND, BACKEND-API, FRONTEND, YCAPI)'
 
+jira_filter_new_tasks = 'project = ADMSYS AND ' \
+                        'issuetype = Request AND ' \
+                        'assignee is EMPTY AND ' \
+                        'status = Open ' \
+                        'ORDER BY priority DESC, updatedDate DESC'
+
 api_chat_id = 'http://releasebot-api/api-v1/chat-id'
 api_get_timetable = 'http://releasebot-api/exchange/get_timetable'
 
@@ -88,3 +94,12 @@ oneass_calendar_api = 'http://fin3.yamoney.ru:8080/sais/bp/calendar/getCalendar'
 informer = 'http://ugr-informer1.admsys.yamoney.ru'
 informer_send_message_url = f'{informer}/send_message'
 informer_inform_duty_url = f'{informer}/inform_duty'
+
+jira_new_tasks_groups_inform = {
+    'Bay': 'ym_admsys_newtask_inform',
+    'Galeon': 'ym_admsys_newtask_inform',
+    'Infra': 'ym_admsys_newtask_inform', 
+    'Wheel': 'ym_admsys_newtask_inform',
+    'SecOps': 'ym_admsys_newtask_inform',
+    'None': 'ym_admsys_newtask_inform'
+}

@@ -61,9 +61,31 @@ def calculate_statistics():
 
 def looking_for_new_tasks():
     """
-       Проверить релизную доску на наличие тасок без исполнителя
+       Проверить релизную доску на наличие новых тасок
     """
     logger.info('-- LOOKING FOR NEW TASKS')
+    try:
+        current_time = datetime.today().strftime("%Y-%m-%dT%H:%M:%S")
+        last_run_time = (datetime.today() - timedelta(minutes=15)).strftime("%Y-%m-%dT%H:%M:%S")
+
+        # получаем список всех задач джиры
+        new_tasks = JiraConnection().search_issues(config.jira_filter_new_tasks)
+
+        # фильтруем список задач за последние 15 минут в dict где key имя группы и value список задач
+        tasks_dict = {}
+        for issue in new_tasks:
+            if last_run_time <= issue.fields.created <= current_time:
+                tasks_dict.setdefault(str(issue.fields.customfield_15421),[]).append(f'<a href="{config.jira_host}/browse/{issue.key}">{issue.fields.summary}</a>') 
+
+        # обрабатываем json с группами, если находим задачи на группу то отправляем.
+        for group in config.jira_new_tasks_groups_inform.keys():
+            if group in tasks_dict:
+                msg = f'\n<b>Уважаемые, {group}, у вас {len(tasks_dict[group])} новых задач в очереди</b>:\n'
+                msg += '\n'.join([issue for issue in tasks_dict[group]])
+                informer.inform_subscribers(config.jira_new_tasks_groups_inform[group], msg)
+
+    except Exception as e:
+        logger.exception('Error in LOOKING FOR NEW TASKS %s', e)
 
 
 def get_duty_date(date):
@@ -456,6 +478,9 @@ if __name__ == "__main__":
 
     # Обновление страницы ServiceDiscovery.AppsRemotes
     scheduler.add_job(update_service_discovery_remotes_wiki, 'cron', day_of_week='*', hour='*', minute='10')
+
+    # Проверить релизную доску на наличие новых тасок
+    scheduler.add_job(looking_for_new_tasks, 'cron', day_of_week='*', hour='*', minute='*/15')
 
     # Запускаем расписание
     scheduler.start()
