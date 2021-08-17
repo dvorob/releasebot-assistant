@@ -82,7 +82,7 @@ def looking_for_new_tasks():
             if group in tasks_dict:
                 msg = f'\n<b>Уважаемые, {group}, у вас {len(tasks_dict[group])} новых задач в очереди</b>:\n'
                 msg += '\n'.join([issue for issue in tasks_dict[group]])
-                informer.inform_subscribers(config.jira_new_tasks_groups_inform[group], msg)
+                informer.send_message_to_users([config.jira_new_tasks_groups_inform[group]], msg)
 
     except Exception as e:
         logger.exception('Error in LOOKING FOR NEW TASKS %s', e)
