@@ -96,6 +96,7 @@ class Users(BaseModel):
     notification = CharField(default='none')
     admin = IntegerField(default=0)
     date_update = DateField(default=None)
+    staff_login = CharField()
 
 class Workdays_List(BaseModel):
     ddate = DateField(primary_key=True)
@@ -210,23 +211,24 @@ class PostgresPool:
         finally:
             self.db.close()
 
-    def set_users(self, account_name, tg_login, working_status, email):
+    def set_users(self, account_name, tg_login=None, working_status=None, full_name=None, email=None, staff_login=None):
         # Записать пользователя в таблицу Users. Переберет параметры и запишет только те из них, что заданы. 
         # Иными словами, если вычитали пользователя из AD с полным набором полей, запись будет создана, поля заполнены.
         # Если передадим tg_id для существующего пользователя, заполнится только это поле
-        logger.debug('set users started for %s ', account_name)
         try:
             logger.debug(f'{account_name}, {tg_login}, {working_status}, {email}')
             self.db.connect(reuse_if_open=True)
             db_users, _ = Users.get_or_create(account_name=account_name)
-            # if full_name:
-            #     db_users.full_name = full_name.replace('ё', 'е')
             if tg_login:
                 db_users.tg_login = tg_login
             if working_status:
                 db_users.working_status = working_status
+            if full_name:
+                db_users.full_name = full_name
             if email:
                 db_users.email = email
+            if staff_login:
+                db_users.staff_login = staff_login
             db_users.date_update = datetime.now()
             db_users.save()
         except Exception as e:

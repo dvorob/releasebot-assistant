@@ -82,7 +82,7 @@ def looking_for_new_tasks():
             if group in tasks_dict:
                 msg = f'\n<b>Уважаемые, {group}, у вас {len(tasks_dict[group])} новых задач в очереди</b>:\n'
                 msg += '\n'.join([issue for issue in tasks_dict[group]])
-                informer.inform_subscribers(config.jira_new_tasks_groups_inform[group], msg)
+                informer.send_message_to_users([config.jira_new_tasks_groups_inform[group]], msg)
 
     except Exception as e:
         logger.exception('Error in LOOKING FOR NEW TASKS %s', e)
@@ -365,9 +365,28 @@ def sync_users_from_staff():
         users_dict = users_req.json()
         for user in users_dict:
             working_status = 'dismissed' if user['dismissed'] else 'working'
-            db().set_users(user['login'], user['telegrams'][0], working_status, user['workEmail'])
+            db().set_users(account_name=user['loginAD'], tg_login=user['telegrams'][0], 
+                           working_status=working_status, email=user['workEmail'], staff_login=user['login'])
     except Exception as e:
         logger.exception('Error in sync users from staff %s', e)
+
+
+def sync_user_names_from_staff():
+    """
+        Сходить в Staff (staff.yooteam.ru) за именами сотрудников
+    """
+    logger.info('-- SYNC USER NAMES FROM STAFF')
+    try:
+        db_users = db().get_users('working_status', 'working', 'equal')
+        for u in db_users:
+            user_req = {}
+            user_req = requests.get(config.staff_url + '1c82_lk/hs/staff/v1/persons/' + u['staff_login'], 
+                                        auth=HttpNtlmAuth(config.ex_user, config.ex_pass), verify=False)
+            user_staff = user_req.json()
+            full_name = user_staff['firstName'] + ' ' + user_staff['lastName']
+            db().set_users(account_name=user_staff['loginAD'], full_name=full_name)
+    except Exception as e:
+        logger.exception('Error in sync user names from staff %s', e)
 
 
 def sync_users_from_ad():
