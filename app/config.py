@@ -88,3 +88,12 @@ oneass_calendar_api = 'http://fin3.yamoney.ru:8080/sais/bp/calendar/getCalendar'
 informer = 'http://ugr-informer1.admsys.yamoney.ru'
 informer_send_message_url = f'{informer}/send_message'
 informer_inform_duty_url = f'{informer}/inform_duty'
+
+jira_new_tasks_groups_inform = {
+    'Bay': 'ym_admsys_newtask_inform',
+    'Galeon': 'ym_admsys_newtask_inform',
+    'Infra': 'ym_admsys_newtask_inform', 
+    'Wheel': 'ym_admsys_newtask_inform',
+    'SecOps': 'ym_admsys_newtask_inform',
+    'None': 'ym_admsys_newtask_inform'
+}
