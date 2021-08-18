@@ -75,7 +75,7 @@ def looking_for_new_tasks():
         tasks_dict = {}
         for issue in new_tasks:
             if last_run_time <= issue.fields.created <= current_time:
-                tasks_dict.setdefault(str(issue.fields.customfield_15421),[]).append(f'<a href="{config.jira_host}/browse/{issue.key}">{issue.fields.summary}</a>') 
+                tasks_dict.setdefault(str(issue.fields.customfield_15421),[]).append(f'<a href="{config.jira_host}/browse/{issue.key}">{issue.key}. {issue.fields.summary}</a>') 
 
         # обрабатываем json с группами, если находим задачи на группу то отправляем.
         for group in config.jira_new_tasks_groups_inform.keys():
