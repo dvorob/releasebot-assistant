@@ -72,7 +72,7 @@ def looking_for_new_tasks():
             # фильтруем список задач за последние 15 минут в dict где key имя группы и value список задач
             if len(new_tasks) > 0:
                 msg = f'\n<b>Уважаемые, {group}, у вас {len(new_tasks)} новых задач в очереди</b>:\n'
-                msg += '\n'.join([f'<a href="https://{config.jira_host}/browse/{issue.key}">{issue.key}. {issue.fields.summary}</a>' for issue in new_tasks])
+                msg += '\n'.join([f'<a href="{config.jira_host}/browse/{issue.key}">{issue.key}. {issue.fields.summary}</a>' for issue in new_tasks])
                 informer.send_message_to_users([config.jira_new_tasks_groups_inform[group]['channel']], msg)
 
     except Exception as e:
