@@ -56,11 +56,79 @@ jira_filter_wip = 'project in (ADMSYS, DEPLOY) AND ' \
 
 jira_filter_components = 'project = COM AND "Target Project" in (BACKEND, BACKEND-API, FRONTEND, YCAPI)'
 
-jira_filter_new_tasks = 'project = ADMSYS AND ' \
-                        'issuetype = Request AND ' \
-                        'assignee is EMPTY AND ' \
-                        'status = Open ' \
-                        'ORDER BY priority DESC, updatedDate DESC'
+jira_filter_new_tasks_admsys_all = 'project = ADMSYS AND ' \
+                                    '(issuetype = Request OR issuetype = Доступ) AND ' \
+                                    'assignee is EMPTY AND ' \
+                                    'status = Open AND ' \
+                                    'updated >= -15m AND ' \
+                                    '(cf[16890] not in (Переводы, Эквайринг, "Платежные методы", Карточки, Идентификация, Устаревшее_B2BAND, Устаревшее_B2BIOS, "Задачи Процессинга", "TECH Группа технического сопровождения", "Вертикали Кассы", "Платформа frontend", Выплаты, РКО, Онбординг, "Merchant Backoffice Experience", АРМ, Контакт-Центр, "Заявки на ADMWIN", "Заявки на адм. MSSQL", "Заявки на инф. Безопасность", SberTeam, "Задачи на Сайт Кассы", "Платформа backend", "Маркетинг(разработка)", "Заказы на маркет.аналитику", Лояльность, "Умная Касса", SMART, "Платформа Кассы", CMS, "SDK и доработки CMS", "Развитие Карт", Mobile-profile, MobileInt, "Mobile Payments", "Mobile Checkout", IOS, "Заказы на 1С", Kernel) OR cf[16890] = EMPTY) AND ' \
+                                    '("Группа ответственных администраторов" not in (Bay, Galeon, Wheel, Infra, SecOps) OR "Группа ответственных администраторов" = EMPTY) ' \
+                                    'ORDER BY priority DESC, updatedDate DESC'
+
+jira_filter_new_tasks_admsys_bay = 'project = ADMSYS AND ' \
+                                   '(issuetype = Request OR issuetype = Доступ) AND ' \
+                                   'assignee is EMPTY AND ' \
+                                   'status = Open AND ' \
+                                   'updated >= -15m AND ' \
+                                   'cf[16890] in (Переводы, Эквайринг, "Платежные методы", Карточки, Идентификация, Устаревшее_B2BAND, Устаревшее_B2BIOS, "Задачи Процессинга", "TECH Группа технического сопровождения", "Заявки на инф. Безопасность", Kernel) AND ' \
+                                   'assignee in (EMPTY, smirnov, krepyshev, vgrachevv) AND ' \
+                                   'Среда in (EMPTY, "test stand", prod) AND ' \
+                                   '("Тестовый стенд" != Yandex OR "Тестовый стенд" is EMPTY) AND ' \
+                                   '"Группа ответственных администраторов" in (Bay, EMPTY) OR ' \
+                                   '"Группа ответственных администраторов" = Bay AND ' \
+                                   '(issuetype = Request OR issuetype = Доступ) AND ' \
+                                   'assignee is EMPTY AND ' \
+                                   'status = Open AND ' \
+                                   'updated >= -15m ' \
+                                   'ORDER BY priority, createdDate DESC'
+
+jira_filter_new_tasks_admsys_galeon = 'project = ADMSYS AND ' \
+                                      'assignee is EMPTY AND ' \
+                                      'status = Open AND ' \
+                                      'updated >= -15m AND ' \
+                                      '(issuetype = Request OR issuetype = Доступ) AND ' \
+                                      'cf[16890] in ("Вертикали Кассы", "Платформа frontend", Выплаты, РКО, Онбординг, "Merchant Backoffice Experience", АРМ, Контакт-Центр, "Заявки на ADMWIN", "Заявки на адм. MSSQL", "Заявки на инф. Безопасность", Kernel, SberTeam) AND ' \
+                                      'assignee in (EMPTY, batuto, titovgs, IgoshinAlexej) AND ' \
+                                      'Среда in (EMPTY, "test stand", prod) AND ' \
+                                      '("Тестовый стенд" != Yandex OR "Тестовый стенд" is EMPTY) AND ' \
+                                      '"Группа ответственных администраторов" in (Galeon, EMPTY) OR ' \
+                                      '"Группа ответственных администраторов" = Galeon AND ' \
+                                      '(issuetype = Request OR issuetype = Доступ) AND ' \
+                                      'assignee is EMPTY AND ' \
+                                      'status = Open AND ' \
+                                      'updated >= -15m ' \
+                                      'ORDER BY priority, createdDate DESC'
+
+jira_filter_new_tasks_admsys_wheel = 'project = ADMSYS AND ' \
+                                     'assignee is EMPTY AND ' \
+                                     'status = Open AND ' \
+                                     'updated >= -15m AND ' \
+                                     '(issuetype = Request OR issuetype = Доступ) AND ' \
+                                     'cf[16890] in ("Задачи на Сайт Кассы", "Платформа backend", "Маркетинг(разработка)", "Заказы на маркет.аналитику", Лояльность, "Умная Касса", SMART, "Платформа Кассы", CMS, "SDK и доработки CMS", "Развитие Карт", Mobile-profile, MobileInt, "Mobile Payments", "Mobile Checkout", IOS, "Заказы на 1С", "Заявки на инф. Безопасность", Kernel) AND ' \
+                                     'assignee in (EMPTY, spiridonovny, aareitsman, podlipaevd) AND ' \
+                                     'Среда in (EMPTY, "test stand", prod) AND ' \
+                                     '("Тестовый стенд" != Yandex OR "Тестовый стенд" is EMPTY) AND ' \
+                                     '"Группа ответственных администраторов" in (Wheel, EMPTY) OR ' \
+                                     '"Группа ответственных администраторов" = wheel AND ' \
+                                     '(issuetype = Request OR issuetype = Доступ) AND ' \
+                                     'assignee is EMPTY AND ' \
+                                     'status = Open AND ' \
+                                     'updated >= -15m ' \
+                                     'ORDER BY priority, createdDate DESC'
+
+jira_filter_new_tasks_admsys_infra = 'project = ADMSYS AND ' \
+                                     'assignee is EMPTY AND ' \
+                                     'status = Open AND ' \
+                                     'updated >= -15m AND ' \
+                                     '"Группа ответственных администраторов" = Infra ' \
+                                     'ORDER BY priority, createdDate DESC'
+
+jira_filter_new_tasks_admsys_secops = 'project = ADMSYS AND ' \
+                                      'assignee is EMPTY AND ' \
+                                      'status = Open AND ' \
+                                      'updated >= -15m AND ' \
+                                      '"Группа ответственных администраторов" = SecOps ' \
+                                      'ORDER BY priority, createdDate DESC'
 
 api_chat_id = 'http://releasebot-api/api-v1/chat-id'
 api_get_timetable = 'http://releasebot-api/exchange/get_timetable'
@@ -96,10 +164,28 @@ informer_send_message_url = f'{informer}/send_message'
 informer_inform_duty_url = f'{informer}/inform_duty'
 
 jira_new_tasks_groups_inform = {
-    'Bay': 'ym_admsys_newtask_inform',
-    'Galeon': 'ym_admsys_newtask_inform',
-    'Infra': 'ym_admsys_newtask_inform', 
-    'Wheel': 'ym_admsys_newtask_inform',
-    'SecOps': 'ym_admsys_newtask_inform',
-    'None': 'ym_admsys_newtask_inform'
+    'Admsys Bay': {
+        'channel': 'ym_admsys_newtask_inform',
+        'filter': jira_filter_new_tasks_admsys_bay
+    },
+    'Admsys Galeon': {
+        'channel': 'ym_admsys_newtask_inform',
+        'filter': jira_filter_new_tasks_admsys_galeon
+    },
+    'Admsys Infra': {
+        'channel': 'ym_admsys_newtask_inform',
+        'filter': jira_filter_new_tasks_admsys_infra
+    },
+    'Admsys Wheel': {
+        'channel': 'ym_admsys_newtask_inform',
+        'filter': jira_filter_new_tasks_admsys_wheel
+    },
+    'Admsys SecOps': {
+        'channel': 'ym_admsys_newtask_inform',
+        'filter': jira_filter_new_tasks_admsys_secops
+    },
+    'Admsys All': {
+        'channel': 'ym_admsys_newtask_inform',
+        'filter': jira_filter_new_tasks_admsys_all
+    }
 }
