@@ -65,24 +65,15 @@ def looking_for_new_tasks():
     """
     logger.info('-- LOOKING FOR NEW TASKS')
     try:
-        current_time = datetime.today().strftime("%Y-%m-%dT%H:%M:%S")
-        last_run_time = (datetime.today() - timedelta(minutes=15)).strftime("%Y-%m-%dT%H:%M:%S")
-
-        # получаем список всех задач джиры
-        new_tasks = JiraConnection().search_issues(config.jira_filter_new_tasks)
-
-        # фильтруем список задач за последние 15 минут в dict где key имя группы и value список задач
-        tasks_dict = {}
-        for issue in new_tasks:
-            if last_run_time <= issue.fields.created <= current_time:
-                tasks_dict.setdefault(str(issue.fields.customfield_15421),[]).append(f'<a href="{config.jira_host}/browse/{issue.key}">{issue.key}. {issue.fields.summary}</a>') 
-
-        # обрабатываем json с группами, если находим задачи на группу то отправляем.
         for group in config.jira_new_tasks_groups_inform.keys():
-            if group in tasks_dict:
-                msg = f'\n<b>Уважаемые, {group}, у вас {len(tasks_dict[group])} новых задач в очереди</b>:\n'
-                msg += '\n'.join([issue for issue in tasks_dict[group]])
-                informer.send_message_to_users([config.jira_new_tasks_groups_inform[group]], msg)
+            # получаем список задач из джиры
+            new_tasks = JiraConnection().search_issues(config.jira_new_tasks_groups_inform[group]['filter'])
+
+            # фильтруем список задач за последние 15 минут в dict где key имя группы и value список задач
+            if len(new_tasks) > 0:
+                msg = f'\n<b>Уважаемые, {group}, у вас {len(new_tasks)} новых задач в очереди</b>:\n'
+                msg += '\n'.join([f'<a href="https://{config.jira_host}/browse/{issue.key}">{issue.key}. {issue.fields.summary}</a>' for issue in new_tasks])
+                informer.send_message_to_users([config.jira_new_tasks_groups_inform[group]['channel']], msg)
 
     except Exception as e:
         logger.exception('Error in LOOKING FOR NEW TASKS %s', e)
