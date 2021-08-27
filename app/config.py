@@ -56,7 +56,6 @@ jira_filter_wip = 'project in (ADMSYS, DEPLOY) AND ' \
 
 jira_filter_components = 'project = COM AND "Target Project" in (BACKEND, BACKEND-API, FRONTEND, YCAPI)'
 
-jira_filter_new_tasks_admsys_all = '37218'
 jira_filter_new_tasks_admsys_bay = '37219'
 jira_filter_new_tasks_admsys_galeon = '37220'
 jira_filter_new_tasks_admsys_wheel = '37221'
@@ -111,9 +110,5 @@ jira_new_tasks_groups_inform = {
     'Admsys Wheel': {
         'channel': 'ym_admsys_newtask_inform',
         'filter': jira_filter_new_tasks_admsys_wheel
-    },
-    'Admsys All': {
-        'channel': 'ym_admsys_newtask_inform',
-        'filter': jira_filter_new_tasks_admsys_all
     }
 }
