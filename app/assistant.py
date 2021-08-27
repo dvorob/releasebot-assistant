@@ -67,7 +67,7 @@ def looking_for_new_tasks():
     try:
         for group in config.jira_new_tasks_groups_inform.keys():
             # получаем список задач из джиры
-            new_tasks = JiraConnection().search_issues(config.jira_new_tasks_groups_inform[group]['filter'])
+            new_tasks = JiraConnection().search_issues(f'filter={config.jira_new_tasks_groups_inform[group]["filter"]}')
 
             # фильтруем список задач за последние 15 минут в dict где key имя группы и value список задач
             if len(new_tasks) > 0:
