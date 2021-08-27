@@ -104,7 +104,7 @@ jira_new_tasks_groups_inform = {
         'filter': jira_filter_new_tasks_admsys_galeon
     },
     'Admsys Infra and SecOps': {
-        'channel': 'ym_admsys_newtask_inform',
+        'channel': 'Admsys.Backoffice',
         'filter': jira_filter_new_tasks_admsys_infra_and_secops
     },
     'Admsys Wheel': {
