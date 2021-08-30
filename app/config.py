@@ -60,6 +60,7 @@ jira_filter_new_tasks_admsys_bay = '37219'
 jira_filter_new_tasks_admsys_galeon = '37220'
 jira_filter_new_tasks_admsys_wheel = '37221'
 jira_filter_new_tasks_admsys_infra_and_secops = '37217'
+jira_filter_new_tasks_admsys_all = '37218'
 
 api_chat_id = 'http://releasebot-api/api-v1/chat-id'
 api_get_timetable = 'http://releasebot-api/exchange/get_timetable'
@@ -110,5 +111,9 @@ jira_new_tasks_groups_inform = {
     'Admsys Wheel': {
         'channel': 'ym_admsys_newtask_inform',
         'filter': jira_filter_new_tasks_admsys_wheel
+    },
+    'Admsys All': {
+        'channel': 'ym_admsys_newtask_inform',
+        'filter': jira_filter_new_tasks_admsys_all
     }
 }
