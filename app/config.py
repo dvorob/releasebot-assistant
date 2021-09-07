@@ -97,11 +97,11 @@ informer_inform_duty_url = f'{informer}/inform_duty'
 
 jira_new_tasks_groups_inform = {
     'Admsys Bay': {
-        'channel': 'ym_admsys_newtask_inform',
+        'channel': 'YM Бухта',
         'filter': jira_filter_new_tasks_admsys_bay
     },
     'Admsys Galeon': {
-        'channel': 'ym_admsys_newtask_inform',
+        'channel': 'YM Галеон',
         'filter': jira_filter_new_tasks_admsys_galeon
     },
     'Admsys Infra and SecOps': {
@@ -109,7 +109,7 @@ jira_new_tasks_groups_inform = {
         'filter': jira_filter_new_tasks_admsys_infra_and_secops
     },
     'Admsys Wheel': {
-        'channel': 'ym_admsys_newtask_inform',
+        'channel': 'YM Штурвал',
         'filter': jira_filter_new_tasks_admsys_wheel
     },
     'Admsys All': {
