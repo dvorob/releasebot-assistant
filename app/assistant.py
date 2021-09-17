@@ -356,6 +356,10 @@ def sync_users_from_staff():
         users_dict = users_req.json()
         for user in users_dict:
             working_status = 'dismissed' if user['dismissed'] else 'working'
+            # Если логин AD не заполнен (актуально для аутстафферов), обрежем email - есть шанс, что он совпадает с логином AD
+            # Если не совпадет, пользователь не получит уведомления о своих релизах. 
+            if len(user['loginAD']) == 0:
+                user['loginAD'] = user['workEmail'][:user['workEmail'].index('@')]
             db().set_users(account_name=user['loginAD'], tg_login=user['telegrams'][0], 
                            working_status=working_status, email=user['workEmail'], staff_login=user['login'])
     except Exception as e:
@@ -442,6 +446,7 @@ if __name__ == "__main__":
     logger = logging.setup()
     logger.info('- - - START ASSISTANT - - - ')
     sync_user_names_from_staff()
+    sync_users_from_staff()
     # --- SCHEDULING ---
     # Инициализируем расписание
     scheduler = BlockingScheduler(timezone='Europe/Moscow')
