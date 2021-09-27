@@ -1,0 +1,26 @@
+---
+
+- name: get vault token
+  uri:
+    url: "https://vault.yamoney.ru/v1/auth/ldap/login/{{ lookup('env', 'VAULT_USER') }}"
+    method: POST
+    body_format: json
+    body:
+      username: "{{ lookup('env', 'VAULT_USER') }}"
+      password: "{{ lookup('env', 'VAULT_PASSWORD') }}"
+  register: prepare_configs_login
+
+- name: save token to file
+  copy:
+    content: '{{ prepare_configs_login.json.auth.client_token }}'
+    dest: "{{ lookup('env', 'WORKSPACE') }}/chart/token"
+
+- name: prepare kubeconfig
+  template:
+    src: kubeconfig.j2
+    dest: "{{ lookup('env', 'WORKSPACE') }}/chart/kubeconfig"
+
+- name: prepare haproxy
+  template:
+    src: "{{ prepare_configs_haproxy_template }}"
+    dest: "{{ lookup('env', 'WORKSPACE') }}/haproxy.cfg"

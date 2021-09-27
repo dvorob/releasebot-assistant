@@ -54,7 +54,7 @@ jira_filter_wip = 'project in (ADMSYS, DEPLOY) AND ' \
                   'status not in (Closed, Resolved, "Waiting release") ' \
                   'ORDER BY priority DESC, updatedDate ASC'
 
-jira_filter_components = 'project = COM AND "Target Project" in (BACKEND, BACKEND-API, FRONTEND, YCAPI)'
+jira_filter_components = 'project = COM AND "Target Project" in (BACKEND, BACKEND-API, FRONTEND, YCAPI, BI)'
 
 jira_filter_new_tasks_admsys_bay = '37219'
 jira_filter_new_tasks_admsys_galeon = '37220'
