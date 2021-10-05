@@ -1,9 +1,9 @@
 ## YMreleaseBot configuration
 
-ymreleasebot:
+releasebot:
   name: 'releasebot-assistant'
   app_type: 'python'
-  app_name: 'ymreleasebot'
+  app_name: 'releasebot'
   kafka_log_topic: 'yamoney_python_ymreleasebot'
   count_replicas: 1
   image: 'docker-ym.nexus.yamoney.ru/yamoney/releasebot-assistant'
@@ -15,7 +15,7 @@ ymreleasebot:
       value: 3306
     ip: 10.200.51.2
   logging:
-    configmap_name: 'log-config-ymreleasebot-assistant'
+    configmap_name: 'log-config-releasebot-assistant'
   resources:
     requests:
       memory: 128Mi
@@ -23,23 +23,3 @@ ymreleasebot:
     limits:
       memory: 512Mi
       cpu: '200m'
-  secrets:
-    telegram:
-      name: 'telegram'
-      value: <value>
-    mysql:
-      name: 'mysql'
-      pass: <value>
-      user: <value>
-    postgres:
-      name: 'postgres'
-      pass: <value>
-      user: <value>
-    jira:
-      name: 'jira'
-      pass: <value>
-      user: <value>
-    exchange:
-      name: 'exchange'
-      pass: <value>
-      user: <value>

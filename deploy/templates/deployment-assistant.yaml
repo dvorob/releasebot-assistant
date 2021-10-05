@@ -1,8 +1,10 @@
-{{ $conf := .Values.ymreleasebot }}
+{{ $conf := .Values.releasebot }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ $conf.name }}
+  name: {{ include "releasebot.fullname" . }}
+  labels:
+    {{- include "releasebot.labels" . | nindent 4 }}
 spec:
   replicas: {{ $conf.count_replicas }}
   selector:
@@ -22,32 +24,12 @@ spec:
         - image: {{ $conf.image }}:{{ $conf.tag }}
           name: {{ $conf.name }}
           imagePullPolicy: Always
-          volumeMounts:
-          - mountPath: /etc/xerxes/logging_assistant.conf
-            name: {{ $conf.logging.configmap_name }}
-            subPath: logging_assistant.conf
           resources:
 {{ toYaml $conf.resources | indent 12  }}
           envFrom:
-            - prefix: secret_jira_
-              secretRef:
-                name: {{ $conf.secrets.jira.name }}
-            - prefix: secret_mysql_
-              secretRef:
-                name: {{ $conf.secrets.mysql.name }}
-            - prefix: secret_postgres_
-              secretRef:
-                name: {{ $conf.secrets.postgres.name }}
-            - prefix: secret_telegram_
-              secretRef:
-                name: {{ $conf.secrets.telegram.name }}
-            - prefix: secret_exchange_
-              secretRef:
-                name: {{ $conf.secrets.exchange.name }}
+            - configMapRef:
+                name: {{ include "releasebot.fullname" . }}
+            - secretRef:
+                name: {{ include "releasebot.fullname" . }}
       nodeSelector:
         node-role.kubernetes.io/node: "true"
-      volumes:
-      - configMap:
-          defaultMode: 420
-          name: {{ $conf.logging.configmap_name }}
-        name: {{ $conf.logging.configmap_name }}

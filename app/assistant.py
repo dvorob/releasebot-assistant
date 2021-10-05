@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """"
-    Ассистент релизного бота
+    Ассистент релизного бота 
     запуск джоб по расписанию, статистика и прочее
 """
 # External
@@ -349,12 +349,14 @@ def sync_users_from_staff():
         Сходить в Staff (staff.yooteam.ru) за сотрудниками
     """
     logger.info('-- SYNC USERS FROM STAFF')
-    try:
-        users_req = {}
-        users_req = requests.get(config.staff_url + '1c82_lk/hs/staff/v1/persons?target=chat-bot', 
-                                    auth=HttpNtlmAuth(config.ex_user, config.ex_pass), verify=False)
-        users_dict = users_req.json()
-        for user in users_dict:
+
+    users_req = {}
+    users_req = requests.get(config.staff_url + '1c82_lk/hs/staff/v1/persons?target=chat-bot', 
+                                auth=HttpNtlmAuth(config.ex_user, config.ex_pass), verify=False)
+    users_dict = users_req.json()
+    for user in users_dict:
+        try:
+            logger.info(f'-- USER {user}')
             working_status = 'dismissed' if user['dismissed'] else 'working'
             # Если логин AD не заполнен (актуально для аутстафферов), обрежем email - есть шанс, что он совпадает с логином AD
             # Если не совпадет, пользователь не получит уведомления о своих релизах. 
@@ -362,8 +364,8 @@ def sync_users_from_staff():
                 user['loginAD'] = user['workEmail'][:user['workEmail'].index('@')]
             db().set_users(account_name=user['loginAD'], tg_login=user['telegrams'][0], 
                            working_status=working_status, email=user['workEmail'], staff_login=user['login'])
-    except Exception as e:
-        logger.exception('Error in sync users from staff %s', e)
+        except Exception as e:
+            logger.exception('Error in sync users from staff %s', e)
 
 
 def sync_user_names_from_staff():
@@ -371,18 +373,21 @@ def sync_user_names_from_staff():
         Сходить в Staff (staff.yooteam.ru) за именами сотрудников
     """
     logger.info('-- SYNC USER NAMES FROM STAFF')
-    try:
-        db_users = db().get_users('working_status', 'working', 'equal')
-        for u in db_users:
+
+    db_users = db().get_users('working_status', 'working', 'equal')
+    for u in db_users:
+        try:
+            logger.info(f'-- USER {u}')
             if 'staff_login' in u:
                 user_req = {}
-                user_req = requests.get(config.staff_url + '1c82_lk/hs/staff/v1/persons/' + u['staff_login'], 
+                staff_login = '' if u['staff_login'] == None else u['staff_login']
+                user_req = requests.get(config.staff_url + '1c82_lk/hs/staff/v1/persons/' + staff_login, 
                                             auth=HttpNtlmAuth(config.ex_user, config.ex_pass), verify=False)
                 user_staff = user_req.json()
                 full_name = user_staff['firstName'] + ' ' + user_staff['lastName']
                 db().set_users(account_name=user_staff['loginAD'], full_name=full_name)
-    except Exception as e:
-        logger.exception('Error in sync user names from staff %s', e)
+        except Exception as e:
+            logger.exception('Error in sync user names from staff %s', e)
 
 
 def sync_users_from_ad():
@@ -472,7 +477,7 @@ if __name__ == "__main__":
     scheduler.add_job(update_app_list_by_commands, 'cron', day_of_week='*', hour='*', minute='*/5')
 
     # Поскольку в 10:00 в календаре присутствует двое дежурных - за вчера и за сегодня, процедура запускается в 5, 25 и 45 минут, чтобы не натыкаться на дубли и не вычищать их
-    scheduler.add_job(sync_duties_from_exchange, 'cron', day_of_week='*', hour='*', minute='5-59/20')
+    scheduler.add_job(sync_duties_from_exchange, 'cron', day_of_week='*', hour='*', minute='5-59/10')
 
     # Обновление страницы ServiceDiscovery.AppsRemotes
     scheduler.add_job(update_service_discovery_remotes_wiki, 'cron', day_of_week='*', hour='*', minute='10')

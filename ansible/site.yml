@@ -1,28 +1,10 @@
----
 
 - hosts: localhost
   become: false
   gather_facts: false
   connection: local
 
-  pre_tasks:
-    - name: which python
-      raw: which /usr/bin/python || which /usr/bin/python3
-      register: py_interpreter
-      changed_when: false
-      tags: always
-      check_mode: no
-
-    - name: set ansible_python_interpreter
-      set_fact:
-        ansible_python_interpreter: "{{ py_interpreter.stdout }}"
-      tags: always
-      check_mode: no
-
-    - name: gather_facts
-      setup:
-      tags: always
-      check_mode: no
-
   roles:
-    - role: prepare_configs
+    - role: get_secret_vault
+      tags:
+        - get_secret_vault

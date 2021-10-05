@@ -1,7 +1,0 @@
----
-
-prepare_configs_ca_certificate: "{{ lookup('hashivault', 'infra/service/YMReleaseBot', 'kube_ca_certs', version=2, mount_point='linux') }}"
-prepare_configs_sa_token: "{{ lookup('hashivault', 'infra/service/YMReleaseBot', 'kube_sa_token', version=2, mount_point='linux') }}"
-prepare_configs_namespace: "releasebot"
-prepare_configs_user: "admsys-releasebot-prod-service-account"
-prepare_configs_haproxy_template: haproxy.cfg-prod.j2

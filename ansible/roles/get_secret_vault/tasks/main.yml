@@ -1,0 +1,9 @@
+---
+
+- name: render configs
+  template:
+    src: '{{ item }}.j2'
+    dest: '{{ playbook_dir }}/{{ item }}'
+  with_items:
+    - kubeconfig.yml
+    - secret_values.yml

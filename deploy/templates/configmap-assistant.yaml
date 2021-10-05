@@ -1,33 +1,31 @@
-{{ $conf := .Values.ymreleasebot }}
+{{ $conf := .Values.releasebot }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ $conf.logging.configmap_name }}
+  name: {{ include "releasebot.fullname" . }}
+  labels:
+    {{- include "releasebot.labels" . | nindent 4 }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "releasebot.fullname" . }}
 data:
-  logging_assistant.conf: |
-    [loggers]
-    keys=root, assistant
-
-    [handlers]
-    keys=consoleHandler
-
-    [formatters]
-    keys=myFormatter
-
-    [logger_root]
-    level=CRITICAL
-    handlers=consoleHandler
-
-    [logger_assistant]
-    level=INFO
-    handlers=consoleHandler
-    qualname=assistant
-
-    [handler_consoleHandler]
-    class=StreamHandler
-    formatter=myFormatter
-    args=(sys.stdout,)
-
-    [formatter_myFormatter]
-    format={"message": "%(message)s", "level": "%(levelname)s", "app_name": "xerxes_assistant", "app_type": "python", "log_type":"code", "es_index_name": "python-xerxes-main", "timestamp": "%(asctime)s"}
-    datefmt=%Y-%m-%dT%H:%M:%S+0300
+  exchange_pass: {{ $conf.secrets.exchange.pass | b64enc | quote }}
+  exchange_user: {{ $conf.secrets.exchange.user | b64enc | quote }}
+  jenkins_base_pass: {{ $conf.secrets.jenkins.base_pass | b64enc | quote }}
+  jenkins_base_token: {{ $conf.secrets.jenkins.base_token | b64enc | quote }}
+  jenkins_base_user: {{ $conf.secrets.jenkins.base_user | b64enc | quote }}
+  jenkins_pass: {{ $conf.secrets.jenkins.pass | b64enc | quote }}
+  jenkins_pcidss_pass: {{ $conf.secrets.jenkins.pcidss_pass | b64enc | quote }}
+  jenkins_pcidss_token: {{ $conf.secrets.jenkins.pcidss_token | b64enc | quote }}
+  jenkins_pcidss_user: {{ $conf.secrets.jenkins.pcidss_user | b64enc | quote }}
+  jira_pass: {{ $conf.secrets.jira.pass | b64enc | quote }}
+  jira_user: {{ $conf.secrets.jira.user | b64enc | quote }}
+  postgres_pass: {{ $conf.secrets.postgres.pass | b64enc | quote }}
+  postgres_user: {{ $conf.secrets.postgres.user | b64enc | quote }}
+  staff_token: {{ $conf.secrets.staff.token | b64enc | quote }}
+  telegram_value: {{ $conf.secrets.telegram.value | b64enc | quote }}
+  zabbix_pass: {{ $conf.secrets.zabbix.pass | b64enc | quote }}
+  zabbix_user: {{ $conf.secrets.zabbix.user | b64enc | quote }}
+  

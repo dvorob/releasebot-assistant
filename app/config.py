@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from os import getenv
+import os
 from playhouse.pool import PostgresqlDatabase, PooledPostgresqlDatabase
 
 ex_host = 'mail-mx10.yamoney.ru'
-ex_user = getenv('secret_exchange_user')
-ex_pass = getenv('secret_exchange_pass')
+ex_user = os.environ.get('exchange_user')
+ex_pass = os.environ.get('exchange_pass')
 ex_cal = 'adminsonduty@yamoney.ru'
 ex_tz = 'Europe/Moscow'
 
 jira_host = 'https://jira.yooteam.ru'
 # через secret задается в кубере
-jira_user = getenv('secret_jira_user')
-jira_pass = getenv('secret_jira_pass')
+jira_user = os.environ.get('jira_user')
+jira_pass = os.environ.get('jira_pass')
 jira_options = {'server': jira_host, 'verify': False}
 jira_filter_returned = 'project in (ADMSYS, DEPLOY) AND ' \
                        'issuetype = "Release (conf)" AND ' \
@@ -54,7 +54,7 @@ jira_filter_wip = 'project in (ADMSYS, DEPLOY) AND ' \
                   'status not in (Closed, Resolved, "Waiting release") ' \
                   'ORDER BY priority DESC, updatedDate ASC'
 
-jira_filter_components = 'project = COM AND "Target Project" in (BACKEND, BACKEND-API, FRONTEND, YCAPI, BI)'
+jira_filter_components = 'project = COM AND "Target Project" in (BACKEND, BACKEND-API, FRONTEND, YCAPI, BI, ATLASS)'
 
 jira_filter_new_tasks_admsys_bay = '37219'
 jira_filter_new_tasks_admsys_galeon = '37220'
@@ -76,8 +76,8 @@ staff_url = 'https://staff.yooteam.ru/'
 #PG configuration
 postgres = PooledPostgresqlDatabase(
     'release_bot',
-    user=getenv('secret_postgres_user').rstrip(),
-    password=getenv('secret_postgres_pass').rstrip(),
+    user=os.environ.get('postgres_user').rstrip(),
+    password=os.environ.get('postgres_pass').rstrip(),
     host='iva-pgtools2.yamoney.ru',
     port=7432,
     max_connections=32,

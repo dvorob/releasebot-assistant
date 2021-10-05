@@ -9,7 +9,7 @@ def setup():
     """
         Initialization logging system
     """
-    logging.config.fileConfig('/etc/xerxes/logging_assistant.conf')
+    logging.config.fileConfig('/opt/app/logging.conf')
     logger = logging.getLogger("assistant")
     logger.propagate = False
     return logger
