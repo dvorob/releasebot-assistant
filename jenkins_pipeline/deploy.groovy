@@ -46,16 +46,11 @@ node('docker') {
                                     colorized: true
                     notifyBitbucket(buildStatus: 'INPROGRESS')
                 }
-                stage('helm lint and dry-run') {
+                stage('helm lint') {
                     echo 'Linting helm'
                     sh '''
                     cd ./deploy &&
                     helm lint . --kubeconfig ../ansible/kubeconfig.yml -f values.yaml -f ../ansible/secret_values.yml -n releasebot
-                    '''
-                    echo 'Dry-run helm'
-                    sh '''
-                    cd ./deploy &&
-                    helm install --dry-run releasebot-assistant . --kubeconfig ../ansible/kubeconfig.yml -f values.yaml -f ../ansible/secret_values.yml -n releasebot
                     '''
                     notifyBitbucket(buildStatus: 'INPROGRESS')
                 }
