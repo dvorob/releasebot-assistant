@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """"
-    Ассистент релизного бота 
+    Ассистент релизного бота
     запуск джоб по расписанию, статистика и прочее
 """
 # External
@@ -12,6 +12,7 @@ import ldap3
 import logging.config
 import re
 import requests
+import time
 import warnings
 from apscheduler.schedulers.background import BlockingScheduler
 from datetime import timedelta, datetime
@@ -65,6 +66,8 @@ def looking_for_new_tasks():
     """
     logger.info('-- LOOKING FOR NEW TASKS')
     try:
+        total_tasks = 0
+        tasks_id = ''
         for group in config.jira_new_tasks_groups_inform.keys():
             # получаем список задач из джиры
             new_tasks = JiraConnection().search_issues(f'filter={config.jira_new_tasks_groups_inform[group]["filter"]}')
@@ -74,7 +77,13 @@ def looking_for_new_tasks():
                 msg = f'\n<b>Уважаемые, {group}, у вас {len(new_tasks)} новых задач в очереди</b>:\n'
                 msg += '\n'.join([f'<a href="{config.jira_host}/browse/{issue.key}">{issue.key}. {issue.fields.summary}</a>' for issue in new_tasks])
                 informer.send_message_to_users([config.jira_new_tasks_groups_inform[group]['channel']], msg)
+                # немного статистики по групам для анализа
+                logger.info(f'For {group} found {len(new_tasks)} tasks: {[issue.key for issue in new_tasks]}')
+                total_tasks += len(new_tasks)
+                tasks_id += ' '.join([issue.key for issue in new_tasks])
 
+        # общая статистика для анализа
+        logger.info(f'Total tasks is {total_tasks}: {tasks_id}')
     except Exception as e:
         logger.exception('Error in LOOKING FOR NEW TASKS %s', e)
 
@@ -125,6 +134,8 @@ def timetable_reminder():
                         resp = session.get(config.api_get_timetable, headers=header)
                         msg = (resp.json())['message']
                     informer.send_message_to_users([acc], msg)
+                    # Exchange при массовых запросах отваливается по таймауту. Добавим sleep
+                    time.sleep(2)
                 else:
                     logger.info('Timetable doesn\'t work for dismissed user %s', db_users)
             except Exception as e:
@@ -134,17 +145,17 @@ def timetable_reminder():
 
 
 def duty_reminder_daily_morning():
-    msg = 'Крепись, ты сегодня дежуришь. С 10:00, если что.'
-    duty_informing_from_schedule(1, 'ADMSYS(биллинг)', msg)
-    duty_informing_from_schedule(1, 'ADMSYS(портал)', msg)
-    duty_informing_from_schedule(1, 'ADMSYS(инфра)', msg)
+    msg = 'Крепись, ты сегодня дежуришь по %s. С 10:00, если что.'
+    duty_informing_from_schedule(1, 'ADMSYS(биллинг)', (msg % 'ADMSYS(биллинг)'))
+    duty_informing_from_schedule(1, 'ADMSYS(портал)', (msg % 'ADMSYS(портал)'))
+    duty_informing_from_schedule(1, 'ADMSYS(инфра)', (msg % 'ADMSYS(инфра)'))
 
 
 def duty_reminder_daily_evening():
-    msg = 'Напоминаю, ты <b>завтра</b> дежуришь по проду. Будь готов :)'
-    duty_informing_from_schedule(1, 'ADMSYS(биллинг)', msg)
-    duty_informing_from_schedule(1, 'ADMSYS(портал)', msg)
-    duty_informing_from_schedule(1, 'ADMSYS(инфра)', msg)
+    msg = 'Напоминаю, ты <b>завтра</b> дежуришь по %s. Будь готов :)'
+    duty_informing_from_schedule(1, 'ADMSYS(биллинг)', (msg % 'ADMSYS(биллинг)'))
+    duty_informing_from_schedule(1, 'ADMSYS(портал)', (msg % 'ADMSYS(портал)'))
+    duty_informing_from_schedule(1, 'ADMSYS(инфра)', (msg % 'ADMSYS(инфра)'))
 
 
 def duty_reminder_weekend():
@@ -153,15 +164,15 @@ def duty_reminder_weekend():
     """
     logger.info('duty reminder weekend started')
     # Субботние дежурные
-    msg = 'Ты дежуришь в субботу'
-    duty_informing_from_schedule(1, 'ADMSYS(биллинг)', msg)
-    duty_informing_from_schedule(1, 'ADMSYS(портал)', msg)
-    duty_informing_from_schedule(1, 'ADMSYS(инфра)', msg)
+    msg = 'Ты дежуришь в субботу по %s'
+    duty_informing_from_schedule(1, 'ADMSYS(биллинг)', (msg % 'ADMSYS(биллинг)'))
+    duty_informing_from_schedule(1, 'ADMSYS(портал)', (msg % 'ADMSYS(портал)'))
+    duty_informing_from_schedule(1, 'ADMSYS(инфра)', (msg % 'ADMSYS(инфра)'))
     # Воскресные дежурные
-    msg = 'Ты дежуришь в воскресенье'
-    duty_informing_from_schedule(2, 'ADMSYS(биллинг)', msg)
-    duty_informing_from_schedule(2, 'ADMSYS(портал)', msg)
-    duty_informing_from_schedule(2, 'ADMSYS(инфра)', msg)
+    msg = 'Ты дежуришь в воскресенье по %s'
+    duty_informing_from_schedule(2, 'ADMSYS(биллинг)', (msg % 'ADMSYS(биллинг)'))
+    duty_informing_from_schedule(2, 'ADMSYS(портал)', (msg % 'ADMSYS(портал)'))
+    duty_informing_from_schedule(2, 'ADMSYS(инфра)', (msg % 'ADMSYS(инфра)'))
 
 
 def duty_reminder_tststnd_daily():
@@ -203,7 +214,7 @@ def sync_duties_from_exchange():
             old_msg, new_msg = ex_duty(cal_start, cal_end)
             msg += old_msg
 
-            logger.info('I find duty for %s : %s', duty_date.strftime("%Y-%m-%d"), msg)
+            logger.debug('I find duty for %s : %s', duty_date.strftime("%Y-%m-%d"), msg)
             # Разобрать сообщение из календаря в формат ["area (зона ответственности)", "имя дежурного", "аккаунт деужурного"]
             duty_list = []
             for msg in new_msg:
@@ -356,16 +367,15 @@ def sync_users_from_staff():
     users_dict = users_req.json()
     for user in users_dict:
         try:
-            logger.info(f'-- USER {user}')
             working_status = 'dismissed' if user['dismissed'] else 'working'
             # Если логин AD не заполнен (актуально для аутстафферов), обрежем email - есть шанс, что он совпадает с логином AD
             # Если не совпадет, пользователь не получит уведомления о своих релизах. 
-            if len(user['loginAD']) == 0:
+            if (len(user['loginAD']) == 0 and len(user['workEmail']) > 0):
                 user['loginAD'] = user['workEmail'][:user['workEmail'].index('@')]
             db().set_users(account_name=user['loginAD'], tg_login=user['telegrams'][0], 
                            working_status=working_status, email=user['workEmail'], staff_login=user['login'])
         except Exception as e:
-            logger.exception('Error in sync users from staff %s', e)
+            logger.exception(f'Error in sync users from staff {user} {str(e)}')
 
 
 def sync_user_names_from_staff():
@@ -377,17 +387,17 @@ def sync_user_names_from_staff():
     db_users = db().get_users('working_status', 'working', 'equal')
     for u in db_users:
         try:
-            logger.info(f'-- USER {u}')
-            if 'staff_login' in u:
+            if ('staff_login' in u and u['staff_login'] != None):
                 user_req = {}
                 staff_login = '' if u['staff_login'] == None else u['staff_login']
                 user_req = requests.get(config.staff_url + '1c82_lk/hs/staff/v1/persons/' + staff_login, 
                                             auth=HttpNtlmAuth(config.ex_user, config.ex_pass), verify=False)
+                logger.debug(f'-- USER {u} {user_req.json()}')    
                 user_staff = user_req.json()
                 full_name = user_staff['firstName'] + ' ' + user_staff['lastName']
                 db().set_users(account_name=user_staff['loginAD'], full_name=full_name)
         except Exception as e:
-            logger.exception('Error in sync user names from staff %s', e)
+            logger.exception(f'Error in sync user names from staff {u} {str(e)}')
 
 
 def sync_users_from_ad():
@@ -464,7 +474,7 @@ if __name__ == "__main__":
     scheduler.add_job(duty_reminder_daily_evening, 'cron', day_of_week='mon,tue,wed,thu,sun',  hour=18, minute=30)
     scheduler.add_job(duty_reminder_weekend, 'cron', day_of_week='fri', hour=14, minute=1)
     scheduler.add_job(duty_reminder_tststnd_daily, 'cron', day_of_week='mon-fri', hour=9, minute=25)
-    scheduler.add_job(timetable_reminder, 'cron', day_of_week='*', hour=9, minute=30)
+    scheduler.add_job(timetable_reminder, 'cron', day_of_week='*', hour=11, minute=12)
 
     # Забрать календарь из 1С
     scheduler.add_job(sync_calendar_daily, 'cron', day_of_week='*', hour=9, minute=10)

@@ -62,10 +62,12 @@ jira_filter_new_tasks_admsys_wheel = '37221'
 jira_filter_new_tasks_admsys_infra_and_secops = '37217'
 jira_filter_new_tasks_admsys_all = '37218'
 
-api_chat_id = 'http://releasebot-api/api-v1/chat-id'
-api_get_timetable = 'http://releasebot-api/exchange/get_timetable'
+api = 'http://releasebot-api'
+api_lock_unlock = f'{api}/api/tasks/lock_unlock'
+api_get_timetable = f'{api}/exchange/get_timetable'
+api_chat_id = f'{api}/api/chat-id'
 
-informer = 'http://ugr-informer1.admsys.yamoney.ru'
+informer = 'http://informer.intools.yooteam.ru'
 informer_inform_duty_url = f'{informer}/inform_duty'
 informer_send_message_url = f'{informer}/send_message'
 informer_send_timetable_url = f'{informer}/send_timetable'
@@ -90,10 +92,6 @@ ldap_filter = '(&(objectCategory=person)(objectClass=user)(!(userAccountControl:
 ldap_attrs = ['cn','sAMAccountName','distinguishedName','extensionattribute4','memberOf','mail']
 
 oneass_calendar_api = 'http://fin3.yamoney.ru:8080/sais/bp/calendar/getCalendar'
-
-informer = 'http://ugr-informer1.admsys.yamoney.ru'
-informer_send_message_url = f'{informer}/send_message'
-informer_inform_duty_url = f'{informer}/inform_duty'
 
 jira_new_tasks_groups_inform = {
     'Admsys Bay': {
