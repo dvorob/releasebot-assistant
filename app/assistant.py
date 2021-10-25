@@ -137,9 +137,9 @@ def timetable_reminder():
                     # Exchange при массовых запросах отваливается по таймауту. Добавим sleep
                     time.sleep(2)
                 else:
-                    logger.info('Timetable doesn\'t work for dismissed user %s', db_users)
+                    logger.info('TIMETABLE doesn\'t work for dismissed user %s', db_users)
             except Exception as e:
-                logger.exception('exception in timetable %s', str(e))
+                logger.exception('exception in TIMETABLE %s', str(e))
     else:
         logger.info('No, today is a holiday, I don\'t want to send timetable reminder')
 
@@ -397,7 +397,7 @@ def sync_user_names_from_staff():
                 full_name = user_staff['firstName'] + ' ' + user_staff['lastName']
                 db().set_users(account_name=user_staff['loginAD'], full_name=full_name)
         except Exception as e:
-            logger.exception(f'Error in sync user names from staff {u} {str(e)}')
+            logger.exception(f'Error in sync user names from staff {u} {user_req} {str(e)}')
 
 
 def sync_users_from_ad():
@@ -480,7 +480,7 @@ if __name__ == "__main__":
     scheduler.add_job(sync_calendar_daily, 'cron', day_of_week='*', hour=9, minute=10)
 
     # Забирает всех пользователей из Стаффа, заливает в БД бота в таблицу Users. Используется для информинга
-    scheduler.add_job(sync_users_from_staff, 'cron', day_of_week='*', hour='*', minute='55')
+    scheduler.add_job(sync_users_from_staff, 'cron', day_of_week='*', hour='*', minute='*/20')
     scheduler.add_job(sync_user_names_from_staff, 'cron', day_of_week='*', hour=5, minute=10)
 
     # Обновить команды, ответственные за компоненты
