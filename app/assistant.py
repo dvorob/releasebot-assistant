@@ -392,10 +392,11 @@ def sync_user_names_from_staff():
                 staff_login = '' if u['staff_login'] == None else u['staff_login']
                 user_req = requests.get(config.staff_url + '1c82_lk/hs/staff/v1/persons/' + staff_login, 
                                             auth=HttpNtlmAuth(config.ex_user, config.ex_pass), verify=False)
-                logger.debug(f'-- USER {u} {user_req.json()}')    
+                logger.debug(f'-- USER {u} {user_req.json()}')
                 user_staff = user_req.json()
                 full_name = user_staff['firstName'] + ' ' + user_staff['lastName']
                 db().set_users(account_name=user_staff['loginAD'], full_name=full_name)
+                time.sleep(1)
         except Exception as e:
             logger.exception(f'Error in sync user names from staff {u} {user_req} {str(e)}')
 
@@ -460,7 +461,7 @@ if __name__ == "__main__":
     warnings.filterwarnings('ignore')
     logger = logging.setup()
     logger.info('- - - START ASSISTANT - - - ')
-    sync_user_names_from_staff()
+    timetable_reminder()
     sync_users_from_staff()
     # --- SCHEDULING ---
     # Инициализируем расписание
@@ -474,13 +475,13 @@ if __name__ == "__main__":
     scheduler.add_job(duty_reminder_daily_evening, 'cron', day_of_week='mon,tue,wed,thu,sun',  hour=18, minute=30)
     scheduler.add_job(duty_reminder_weekend, 'cron', day_of_week='fri', hour=14, minute=1)
     scheduler.add_job(duty_reminder_tststnd_daily, 'cron', day_of_week='mon-fri', hour=9, minute=25)
-    scheduler.add_job(timetable_reminder, 'cron', day_of_week='*', hour=11, minute=12)
+    scheduler.add_job(timetable_reminder, 'cron', day_of_week='*', hour=9, minute=00)
 
     # Забрать календарь из 1С
     scheduler.add_job(sync_calendar_daily, 'cron', day_of_week='*', hour=9, minute=10)
 
     # Забирает всех пользователей из Стаффа, заливает в БД бота в таблицу Users. Используется для информинга
-    scheduler.add_job(sync_users_from_staff, 'cron', day_of_week='*', hour='*', minute='*/20')
+    scheduler.add_job(sync_users_from_staff, 'cron', day_of_week='*', hour='*', minute=35)
     scheduler.add_job(sync_user_names_from_staff, 'cron', day_of_week='*', hour=5, minute=10)
 
     # Обновить команды, ответственные за компоненты
