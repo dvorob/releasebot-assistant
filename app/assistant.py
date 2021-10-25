@@ -128,7 +128,7 @@ def timetable_reminder():
             try:
                 db_users = db().get_users('account_name', acc, 'equal')
                 if db_users[0]['working_status'] != 'dismissed':
-                    header = {'calendar_email': db_users[0]['email'], 'afterdays': str(0)}
+                    header = {'email': db_users[0]['email'], 'afterdays': str(0)}
                     responses = []
                     with requests.session() as session:
                         resp = session.get(config.api_get_timetable, headers=header)
