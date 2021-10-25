@@ -62,10 +62,9 @@ jira_filter_new_tasks_admsys_wheel = '37221'
 jira_filter_new_tasks_admsys_infra_and_secops = '37217'
 jira_filter_new_tasks_admsys_all = '37218'
 
-api = 'http://releasebot-api'
-api_lock_unlock = f'{api}/api/tasks/lock_unlock'
-api_get_timetable = f'{api}/exchange/get_timetable'
-api_chat_id = f'{api}/api/chat-id'
+bot_api_url = 'http://releasebot-api.intools.yooteam.ru'
+api_lock_unlock = f'{bot_api_url}/api/tasks/lock_unlock'
+api_get_timetable = f'{bot_api_url}/exchange/get_timetable'
 
 informer = 'http://informer.intools.yooteam.ru'
 informer_inform_duty_url = f'{informer}/inform_duty'
