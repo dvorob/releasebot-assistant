@@ -224,7 +224,7 @@ class PostgresPool:
             if working_status:
                 db_users.working_status = working_status
             if full_name:
-                db_users.full_name = full_name
+                db_users.full_name = full_name.replace('ё', 'е')
             if email:
                 db_users.email = email
             if staff_login:
