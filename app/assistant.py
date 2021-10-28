@@ -69,19 +69,22 @@ def looking_for_new_tasks():
         total_tasks = 0
         tasks_id = ''
         for group in config.jira_new_tasks_groups_inform.keys():
+            group_tasks = 0
             # получаем список задач из джиры
             new_tasks = JiraConnection().search_issues(f'filter={config.jira_new_tasks_groups_inform[group]["filter"]}')
 
             # фильтруем список задач за последние 15 минут в dict где key имя группы и value список задач
-            msg = f'\n<b>Уважаемые, {group}, у вас {len(new_tasks)} новых задач в очереди</b>:\n'
+            msg = ''
             for issue in new_tasks:
                 if datetime.strptime(issue.fields.created[0:19], '%Y-%m-%dT%H:%M:%S') >= (datetime.now() - timedelta(minutes=15)):
                     msg += f'<a href="{config.jira_host}/browse/{issue.key}">{issue.key}. {issue.fields.summary}</a>\n'
-                    total_tasks += 1
-                    tasks_id += ' '.join(issue.key)
+                    group_tasks += 1
+                    tasks_id += ' '.join(str(issue.key))
             # Если новые задачи были - отправим получившееся уведомление
-            if total_tasks > 0:
-                informer.send_message_to_users('ymvorobevda', msg)
+            if group_tasks > 0:
+                total_tasks += group_tasks
+                msg = f'\n<b>Уважаемые, {group}, у вас {str(group_tasks)} новых задач в очереди</b>:\n' + msg
+                informer.send_message_to_users([config.jira_new_tasks_groups_inform[group]['channel']], msg)
                 # немного статистики по групам для анализа
                 logger.info(f'For {group} found {len(new_tasks)} tasks: {[issue.key for issue in new_tasks]}')
 
