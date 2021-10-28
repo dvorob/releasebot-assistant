@@ -56,12 +56,12 @@ jira_filter_wip = 'project in (ADMSYS, DEPLOY) AND ' \
 
 jira_filter_components = 'project = COM AND "Target Project" in (BACKEND, BACKEND-API, FRONTEND, YCAPI, BI, ATLASS)'
 
-jira_filter_new_tasks_admsys_bay = '37219'
-jira_filter_new_tasks_admsys_galeon = '37220'
-jira_filter_new_tasks_admsys_wheel = '37221'
-jira_filter_new_tasks_admsys_infra_and_secops = '37217'
-jira_filter_new_tasks_admsys_all = '37218'
-jira_filter_unassigned_admsys_galeon = '37402'
+class JiraFilters(Enum):
+    UNASSIGNED_ADMSYS_GALEON = '37402'
+    UNASSIGNED_ADMSYS_BAY = '37403'
+    UNASSIGNED_ADMSYS_WHEEL = '37404'
+    UNASSIGNED_ADMSYS_INFRA_AND_SECOPS = '37405'
+    UNASSIGNED_ADMSYS_ALL = '37406'
 
 bot_api_url = 'http://releasebot-api.intools.yooteam.ru'
 api_lock_unlock = f'{bot_api_url}/api/tasks/lock_unlock'
@@ -93,32 +93,25 @@ ldap_attrs = ['cn','sAMAccountName','distinguishedName','extensionattribute4','m
 
 oneass_calendar_api = 'http://fin3.yamoney.ru:8080/sais/bp/calendar/getCalendar'
 
-jira_new_tasks_groups_inform = {
+jira_unassigned_tasks_groups_inform = {
     'Admsys Bay': {
         'channel': 'YM Бухта',
-        'filter': jira_filter_new_tasks_admsys_bay
+        'filter': JiraFilters.UNASSIGNED_ADMSYS_BAY.value
     },
     'Admsys Galeon': {
         'channel': 'YM Галеон',
-        'filter': jira_filter_new_tasks_admsys_galeon
+        'filter': JiraFilters.UNASSIGNED_ADMSYS_GALEON.value
     },
     'Admsys Infra and SecOps': {
         'channel': 'Admsys.Backoffice',
-        'filter': jira_filter_new_tasks_admsys_infra_and_secops
+        'filter': JiraFilters.UNASSIGNED_ADMSYS_INFRA_AND_SECOPS.value
     },
     'Admsys Wheel': {
         'channel': 'YM Штурвал',
-        'filter': jira_filter_new_tasks_admsys_wheel
+        'filter': JiraFilters.UNASSIGNED_ADMSYS_WHEEL.value
     },
     'Admsys All': {
         'channel': 'ym_admsys_newtask_inform',
-        'filter': jira_filter_new_tasks_admsys_all
-    }
-}
-
-jira_unassigned_tasks_groups_inform = {
-    'Admsys Galeon': {
-        'channel': 'YM Галеон',
-        'filter': jira_filter_unassigned_admsys_galeon
+        'filter': JiraFilters.UNASSIGNED_ADMSYS_ALL.value
     }
 }
