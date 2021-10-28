@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+from enum import Enum
 from playhouse.pool import PostgresqlDatabase, PooledPostgresqlDatabase
 
 ex_host = 'mail-mx10.yamoney.ru'
