@@ -61,7 +61,8 @@ class JiraFilters(Enum):
     UNASSIGNED_ADMSYS_GALEON = '37402'
     UNASSIGNED_ADMSYS_BAY = '37403'
     UNASSIGNED_ADMSYS_WHEEL = '37404'
-    UNASSIGNED_ADMSYS_INFRA_AND_SECOPS = '37405'
+    UNASSIGNED_ADMSYS_INFRA_AND_SECOPS_ALL = '37407'
+    UNASSIGNED_ADMSYS_INFRA_AND_SECOPS_REQUESTS = '37405'
     UNASSIGNED_ADMSYS_ALL = '37406'
 
 bot_api_url = 'http://releasebot-api.intools.yooteam.ru'
@@ -105,7 +106,30 @@ jira_unassigned_tasks_groups_inform = {
     },
     'Admsys Infra and SecOps': {
         'channel': 'Admsys.Backoffice',
-        'filter': JiraFilters.UNASSIGNED_ADMSYS_INFRA_AND_SECOPS.value
+        'filter': JiraFilters.UNASSIGNED_ADMSYS_INFRA_AND_SECOPS_REQUESTS.value
+    },
+    'Admsys Wheel': {
+        'channel': 'YM Штурвал',
+        'filter': JiraFilters.UNASSIGNED_ADMSYS_WHEEL.value
+    },
+    'Admsys All': {
+        'channel': 'ym_admsys_newtask_inform',
+        'filter': JiraFilters.UNASSIGNED_ADMSYS_ALL.value
+    }
+}
+
+jira_new_tasks_groups_inform = {
+    'Admsys Bay': {
+        'channel': 'YM Бухта',
+        'filter': JiraFilters.UNASSIGNED_ADMSYS_BAY.value
+    },
+    'Admsys Galeon': {
+        'channel': 'YM Галеон',
+        'filter': JiraFilters.UNASSIGNED_ADMSYS_GALEON.value
+    },
+    'Admsys Infra and SecOps': {
+        'channel': 'Admsys.Backoffice',
+        'filter': JiraFilters.UNASSIGNED_ADMSYS_INFRA_AND_SECOPS_ALL.value
     },
     'Admsys Wheel': {
         'channel': 'YM Штурвал',

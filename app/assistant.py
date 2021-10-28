@@ -68,21 +68,22 @@ def looking_for_new_tasks():
     try:
         total_tasks = 0
         tasks_id = ''
-        for group in config.jira_unassigned_tasks_groups_inform.keys():
+        for group in config.jira_new_tasks_groups_inform.keys():
             # получаем список задач из джиры
-            new_tasks = JiraConnection().search_issues(f'filter={config.jira_unassigned_tasks_groups_inform[group]["filter"]}')
+            new_tasks = JiraConnection().search_issues(f'filter={config.jira_new_tasks_groups_inform[group]["filter"]}')
 
             # фильтруем список задач за последние 15 минут в dict где key имя группы и value список задач
-            if len(new_tasks) > 0:
-                msg = f'\n<b>Уважаемые, {group}, у вас {len(new_tasks)} новых задач в очереди</b>:\n'
-                for issue in new_tasks:
-                    if datetime.strptime(issue.fields.created[0:19], '%Y-%m-%dT%H:%M:%S') >= (datetime.now() - timedelta(minutes=15)):
-                        msg += f'<a href="{config.jira_host}/browse/{issue.key}">{issue.key}. {issue.fields.summary}</a>\n'
-                informer.send_message_to_users([config.jira_unassigned_tasks_groups_inform[group]['channel']], msg)
+            msg = f'\n<b>Уважаемые, {group}, у вас {len(new_tasks)} новых задач в очереди</b>:\n'
+            for issue in new_tasks:
+                if datetime.strptime(issue.fields.created[0:19], '%Y-%m-%dT%H:%M:%S') >= (datetime.now() - timedelta(minutes=15)):
+                    msg += f'<a href="{config.jira_host}/browse/{issue.key}">{issue.key}. {issue.fields.summary}</a>\n'
+                    total_tasks += 1
+                    tasks_id += ' '.join(issue.key)
+            # Если новые задачи были - отправим получившееся уведомление
+            if total_tasks > 0:
+                informer.send_message_to_users('ymvorobevda', msg)
                 # немного статистики по групам для анализа
                 logger.info(f'For {group} found {len(new_tasks)} tasks: {[issue.key for issue in new_tasks]}')
-                total_tasks += len(new_tasks)
-                tasks_id += ' '.join([issue.key for issue in new_tasks])
 
         # общая статистика для анализа
         logger.info(f'Total tasks is {total_tasks}: {tasks_id}')
@@ -487,7 +488,6 @@ if __name__ == "__main__":
     logger = logging.setup()
     logger.info('- - - START ASSISTANT - - - ')
     #sync_users_from_staff()
-    unassigned_task_reminder()
     # --- SCHEDULING ---
     # Инициализируем расписание
     scheduler = BlockingScheduler(timezone='Europe/Moscow')
