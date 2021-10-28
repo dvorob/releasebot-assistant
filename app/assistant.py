@@ -88,6 +88,29 @@ def looking_for_new_tasks():
         logger.exception('Error in LOOKING FOR NEW TASKS %s', e)
 
 
+def unassigned_task_reminder():
+    """
+       Отправить список неразобранных тасок
+    """
+    logger.info('-- LOOKING FOR UNASSIGNED TASKS')
+    try:
+        total_tasks = 0
+        tasks_id = ''
+        for group in config.jira_unassigned_tasks_groups_inform.keys():
+            # получаем список задач из джиры
+            unassigned_tasks = JiraConnection().search_issues(f'filter={config.jira_unassigned_tasks_groups_inform[group]["filter"]}')
+            if len(unassigned_tasks) > 0:
+                msg = f'\n<b>Уважаемые, {group}, у вас {len(unassigned_tasks)} неразобранных задач в очереди</b>:\n'
+                msg += '\n'.join([f'<a href="{config.jira_host}/browse/{issue.key}">{issue.key}. {issue.fields.summary}</a>' for issue in unassigned_tasks])
+                informer.send_message_to_users([config.jira_unassigned_tasks_groups_inform[group]['channel']], msg)
+                # немного статистики по групам для анализа
+                logger.info(f'For {group} found {len(unassigned_tasks)} tasks: {[issue.key for issue in unassigned_tasks]}')
+                total_tasks += len(unassigned_tasks)
+                tasks_id += ' '.join([issue.key for issue in unassigned_tasks])
+    except Exception as e:
+        logger.exception('Error in LOOKING FOR UNASSIGNED TASKS %s', e)
+
+
 def get_duty_date(date):
     # Если запрошены дежурные до 10 утра, то это "вчерашние дежурные"
     # Это особенность дежурств в Департаменте
@@ -461,8 +484,8 @@ if __name__ == "__main__":
     warnings.filterwarnings('ignore')
     logger = logging.setup()
     logger.info('- - - START ASSISTANT - - - ')
-    timetable_reminder()
-    sync_users_from_staff()
+    #sync_users_from_staff()
+    unassigned_task_reminder()
     # --- SCHEDULING ---
     # Инициализируем расписание
     scheduler = BlockingScheduler(timezone='Europe/Moscow')
@@ -495,6 +518,9 @@ if __name__ == "__main__":
 
     # Проверить релизную доску на наличие новых тасок
     scheduler.add_job(looking_for_new_tasks, 'cron', day_of_week='*', hour='*', minute='*/15')
+
+    # Проверить релизную доску на наличие неразобранных тасок
+    scheduler.add_job(unassigned_task_reminder, 'cron', day_of_week='mon-fri', hour='10', minute='15')
 
     # Запускаем расписание
     scheduler.start()

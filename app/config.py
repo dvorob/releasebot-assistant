@@ -61,6 +61,7 @@ jira_filter_new_tasks_admsys_galeon = '37220'
 jira_filter_new_tasks_admsys_wheel = '37221'
 jira_filter_new_tasks_admsys_infra_and_secops = '37217'
 jira_filter_new_tasks_admsys_all = '37218'
+jira_filter_unassigned_admsys_galeon = '37402'
 
 bot_api_url = 'http://releasebot-api.intools.yooteam.ru'
 api_lock_unlock = f'{bot_api_url}/api/tasks/lock_unlock'
@@ -112,5 +113,12 @@ jira_new_tasks_groups_inform = {
     'Admsys All': {
         'channel': 'ym_admsys_newtask_inform',
         'filter': jira_filter_new_tasks_admsys_all
+    }
+}
+
+jira_unassigned_tasks_groups_inform = {
+    'Admsys Galeon': {
+        'channel': 'YM Галеон',
+        'filter': jira_filter_unassigned_admsys_galeon
     }
 }
