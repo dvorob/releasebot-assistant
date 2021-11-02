@@ -82,7 +82,7 @@ postgres = PooledPostgresqlDatabase(
     'release_bot',
     user=os.environ.get('postgres_user').rstrip(),
     password=os.environ.get('postgres_pass').rstrip(),
-    host='iva-pgtools2.yamoney.ru',
+    host='iva-pgtools.yamoney.ru',
     port=7432,
     max_connections=32,
     stale_timeout=300)
