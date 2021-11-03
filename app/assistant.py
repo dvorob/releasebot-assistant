@@ -40,7 +40,7 @@ def calculate_statistics():
     try:
         today = datetime.today().strftime("%Y-%m-%d")
 
-        if db().get_workday(today):
+        if db().is_workday(today):
             msg = f'Статистика по релизам за сегодня.\n'
 
             rollback = JiraConnection().search_issues(config.jira_rollback_today)
@@ -113,12 +113,17 @@ def unassigned_task_reminder():
 
 
 def inform_admins_about_tasks(admins_group: dict, msg: str):
-    if 'channel' in admins_group:
-        informer.send_message_to_users([admins_group['channel']], msg)
-    elif 'duty_area' in admins_group:
-        informer.inform_duty([admins_group['duty_area']], msg)
-    else:
-        logger.info(f'-- INFORM ADMINS ABOUT TASKS: nowhere to send msg {admins_group} {msg}')
+    """
+        Отправка уведомление по таскам происходит только в рабочие дни и только с 10 до 20
+    """
+    if ((int(datetime.today().strftime("%H")) in range(10, 20)) and
+        (db().is_workday(datetime.today().strftime("%Y-%m-%d")))):
+        if 'channel' in admins_group:
+            informer.send_message_to_users([admins_group['channel']], msg)
+        elif 'duty_area' in admins_group:
+            informer.inform_duty([admins_group['duty_area']], msg)
+        else:
+            logger.info(f'-- INFORM ADMINS ABOUT TASKS: nowhere to send msg {admins_group} {msg}')
 
 
 def get_duty_date(date):
@@ -156,7 +161,7 @@ def timetable_reminder():
     logger.info('-- TIMETABLE REMINDER')
     today = datetime.today().strftime("%Y-%m-%d")
 
-    if db().get_workday(today):
+    if db().is_workday(today):
         for acc in db().get_all_users_with_subscription('timetable'):
             try:
                 db_users = db().get_users('account_name', acc, 'equal')
