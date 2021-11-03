@@ -40,7 +40,7 @@ def calculate_statistics():
     try:
         today = datetime.today().strftime("%Y-%m-%d")
 
-        if db().get_workday(today):
+        if db().is_workday(today):
             msg = f'Статистика по релизам за сегодня.\n'
 
             rollback = JiraConnection().search_issues(config.jira_rollback_today)
@@ -65,57 +65,65 @@ def looking_for_new_tasks():
        Проверить релизную доску на наличие новых тасок
     """
     logger.info('-- LOOKING FOR NEW TASKS')
-    try:
-        total_tasks = 0
-        tasks_id = ''
-        for group in config.jira_new_tasks_groups_inform.keys():
-            group_tasks = 0
-            # получаем список задач из джиры
-            new_tasks = JiraConnection().search_issues(f'filter={config.jira_new_tasks_groups_inform[group]["filter"]}')
+    total_tasks = 0
+    tasks_id = ''
+    for group in config.jira_new_tasks_groups_inform.keys():
+        group_tasks = 0
+        # получаем список задач из джиры
+        new_tasks = JiraConnection().search_issues(f'filter={config.jira_new_tasks_groups_inform[group]["filter"]}')
 
-            # фильтруем список задач за последние 15 минут в dict где key имя группы и value список задач
-            msg = ''
-            for issue in new_tasks:
-                if datetime.strptime(issue.fields.created[0:19], '%Y-%m-%dT%H:%M:%S') >= (datetime.now() - timedelta(minutes=15)):
-                    msg += f'<a href="{config.jira_host}/browse/{issue.key}">{issue.key}. {issue.fields.summary}</a>\n'
-                    group_tasks += 1
-                    tasks_id += ' '.join(str(issue.key))
-            # Если новые задачи были - отправим получившееся уведомление
-            if group_tasks > 0:
-                total_tasks += group_tasks
-                msg = f'\n<b>Уважаемые, {group}, у вас {str(group_tasks)} новых задач в очереди</b>:\n' + msg
-                informer.send_message_to_users([config.jira_new_tasks_groups_inform[group]['channel']], msg)
-                # немного статистики по групам для анализа
-                logger.info(f'For {group} found {len(new_tasks)} tasks: {[issue.key for issue in new_tasks]}')
+        # фильтруем список задач за последние 15 минут в dict где key имя группы и value список задач
+        msg = ''
+        for issue in new_tasks:
+            if datetime.strptime(issue.fields.created[0:19], '%Y-%m-%dT%H:%M:%S') >= (datetime.now() - timedelta(minutes=15)):
+                msg += f'<a href="{config.jira_host}/browse/{issue.key}">{issue.key}. {issue.fields.summary}</a>\n'
+                group_tasks += 1
+                tasks_id += ' '.join(str(issue.key))
+        # Если новые задачи были - отправим получившееся уведомление
+        if group_tasks > 0:
+            total_tasks += group_tasks
+            msg = f'\n<b>Уважаемые, {group}, у вас {str(group_tasks)} новых задач в очереди</b>:\n' + msg
+            inform_admins_about_tasks(config.jira_unassigned_tasks_groups_inform[group], msg)
+            # немного статистики по групам для анализа
+            logger.info(f'For {group} found {len(new_tasks)} tasks: {[issue.key for issue in new_tasks]}')
 
-        # общая статистика для анализа
-        logger.info(f'Total tasks is {total_tasks}: {tasks_id}')
-    except Exception as e:
-        logger.exception('Error in LOOKING FOR NEW TASKS %s', e)
+    # общая статистика для анализа
+    logger.info(f'Total tasks is {total_tasks}: {tasks_id}')
 
 
 def unassigned_task_reminder():
     """
-       Отправить список неразобранных тасок
+       Отправить весь список неразобранных тасок утром
     """
     logger.info('-- LOOKING FOR UNASSIGNED TASKS')
-    try:
-        total_tasks = 0
-        tasks_id = ''
-        for group in config.jira_unassigned_tasks_groups_inform.keys():
-            # получаем список задач из джиры
-            unassigned_tasks = JiraConnection().search_issues(f'filter={config.jira_unassigned_tasks_groups_inform[group]["filter"]}')
-            msg = f'\n<b>Уважаемые, {group}, у вас нет неразобранных задач в очереди</b>:\n'
-            if len(unassigned_tasks) > 0:
-                msg = f'\n<b>Уважаемые, {group}, у вас {len(unassigned_tasks)} неразобранных задач в очереди</b>:\n'
-                msg += '\n'.join([f'<a href="{config.jira_host}/browse/{issue.key}">{issue.key}. {issue.fields.summary}</a>' for issue in unassigned_tasks])
-                # немного статистики по групам для анализа
-                logger.info(f'For {group} found {len(unassigned_tasks)} tasks: {[issue.key for issue in unassigned_tasks]}')
-                total_tasks += len(unassigned_tasks)
-                tasks_id += ' '.join([issue.key for issue in unassigned_tasks])
-            informer.send_message_to_users([config.jira_unassigned_tasks_groups_inform[group]['channel']], msg)
-    except Exception as e:
-        logger.exception('Error in LOOKING FOR UNASSIGNED TASKS %s', e)
+    total_tasks = 0
+    tasks_id = ''
+    for group in config.jira_unassigned_tasks_groups_inform.keys():
+        # получаем список задач из джиры
+        unassigned_tasks = JiraConnection().search_issues(f'filter={config.jira_unassigned_tasks_groups_inform[group]["filter"]}')
+        msg = f'\n<b>Уважаемые, {group}, у вас нет неразобранных задач в очереди</b>:\n'
+        if len(unassigned_tasks) > 0:
+            msg = f'\n<b>Уважаемые, {group}, у вас {len(unassigned_tasks)} неразобранных задач в очереди</b>:\n'
+            msg += '\n'.join([f'<a href="{config.jira_host}/browse/{issue.key}">{issue.key}. {issue.fields.summary}</a>' for issue in unassigned_tasks])
+            total_tasks += len(unassigned_tasks)
+            tasks_id += ' '.join([issue.key for issue in unassigned_tasks])
+            inform_admins_about_tasks(config.jira_unassigned_tasks_groups_inform[group], msg)
+            # немного статистики по групам для анализа
+            logger.info(f'For {group} found {len(unassigned_tasks)} tasks: {[issue.key for issue in unassigned_tasks]}')
+
+
+def inform_admins_about_tasks(admins_group: dict, msg: str):
+    """
+        Отправка уведомление по таскам происходит только в рабочие дни и только с 10 до 20
+    """
+    if ((int(datetime.today().strftime("%H")) in range(10, 20)) and
+        (db().is_workday(datetime.today().strftime("%Y-%m-%d")))):
+        if 'channel' in admins_group:
+            informer.send_message_to_users([admins_group['channel']], msg)
+        elif 'duty_area' in admins_group:
+            informer.inform_duty([admins_group['duty_area']], msg)
+        else:
+            logger.info(f'-- INFORM ADMINS ABOUT TASKS: nowhere to send msg {admins_group} {msg}')
 
 
 def get_duty_date(date):
@@ -153,7 +161,7 @@ def timetable_reminder():
     logger.info('-- TIMETABLE REMINDER')
     today = datetime.today().strftime("%Y-%m-%d")
 
-    if db().get_workday(today):
+    if db().is_workday(today):
         for acc in db().get_all_users_with_subscription('timetable'):
             try:
                 db_users = db().get_users('account_name', acc, 'equal')

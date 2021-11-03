@@ -138,5 +138,9 @@ jira_new_tasks_groups_inform = {
     'Admsys All': {
         'channel': 'ym_admsys_newtask_inform',
         'filter': JiraFilters.UNASSIGNED_ADMSYS_ALL.value
+    },
+    'NOC Duty': {
+        'duty_area': 'ADMSYS(test)',
+        'filter': JiraFilters.UNASSIGNED_ADMSYS_GALEON.value
     }
 }

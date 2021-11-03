@@ -303,9 +303,9 @@ class PostgresPool:
     # ---------------------------------
     # ----- Workdays ------------------
 
-    def get_workday(self, ddate) -> list:
+    def is_workday(self, ddate) -> bool:
         # Сходить в workdays_list и узнать, рабочий день или нет
-        logger.debug('get workday %s ', ddate)
+        logger.debug(f'is workday {ddate}')
         try:
             self.db.connect(reuse_if_open=True)
             result = []
@@ -318,7 +318,7 @@ class PostgresPool:
                 result = None
             return result
         except Exception as e:
-            logger.exception('exception in get workday %s', e)
+            logger.exception(f'exception in is workday {str(e)}')
         finally:
             self.db.close()
 
