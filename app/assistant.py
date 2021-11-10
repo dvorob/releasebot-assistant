@@ -101,15 +101,15 @@ def unassigned_task_reminder():
     for group in config.jira_unassigned_tasks_groups_inform.keys():
         # получаем список задач из джиры
         unassigned_tasks = JiraConnection().search_issues(f'filter={config.jira_unassigned_tasks_groups_inform[group]["filter"]}')
-        msg = f'\n<b>Уважаемые, {group}, у вас нет неразобранных задач в очереди</b>:\n'
+        msg = f'\nУважаемые, {group}, у вас <b>нет</b> неразобранных задач в очереди\n'
         if len(unassigned_tasks) > 0:
             msg = f'\n<b>Уважаемые, {group}, у вас {len(unassigned_tasks)} неразобранных задач в очереди</b>:\n'
             msg += '\n'.join([f'<a href="{config.jira_host}/browse/{issue.key}">{issue.key}. {issue.fields.summary}</a>' for issue in unassigned_tasks])
             total_tasks += len(unassigned_tasks)
             tasks_id += ' '.join([issue.key for issue in unassigned_tasks])
-            inform_admins_about_tasks(config.jira_unassigned_tasks_groups_inform[group], msg)
             # немного статистики по групам для анализа
             logger.info(f'For {group} found {len(unassigned_tasks)} tasks: {[issue.key for issue in unassigned_tasks]}')
+        inform_admins_about_tasks(config.jira_unassigned_tasks_groups_inform[group], msg)
 
 
 def inform_admins_about_tasks(admins_group: dict, msg: str):
@@ -425,11 +425,15 @@ def sync_user_names_from_staff():
     db_users = db().get_users('working_status', 'working', 'equal')
     for u in db_users:
         try:
-            if ('staff_login' in u and u['staff_login'] != None):
+            if ('staff_login' in u and u['staff_login'] != None and u['working_status'] != 'dismissed'):
                 user_req = {}
                 staff_login = '' if u['staff_login'] == None else u['staff_login']
                 user_req = requests.get(config.staff_url + '1c82_lk/hs/staff/v1/persons/' + staff_login, 
                                             auth=HttpNtlmAuth(config.ex_user, config.ex_pass), verify=False)
+                if user_req.status_code == 404:
+                    logger.info(f"User not found and will be dismissed {u}")
+                    db().set_users(account_name=u['account_name'], working_status='dismissed')
+                    continue
                 logger.debug(f'-- USER {u} {user_req.json()}')
                 user_staff = user_req.json()
                 full_name = user_staff['firstName'] + ' ' + user_staff['lastName']
