@@ -428,19 +428,22 @@ def sync_user_names_from_staff():
             if ('staff_login' in u and u['staff_login'] != None and u['working_status'] != 'dismissed'):
                 user_req = {}
                 staff_login = '' if u['staff_login'] == None else u['staff_login']
+                logger.info(requests.get(config.staff_url + '1c82_lk/hs/staff/v1/persons/' + staff_login))
                 user_req = requests.get(config.staff_url + '1c82_lk/hs/staff/v1/persons/' + staff_login, 
-                                            auth=HttpNtlmAuth(config.ex_user, config.ex_pass), verify=False)
+                                        auth=HttpNtlmAuth(config.ex_user, config.ex_pass), verify=False)
                 if user_req.status_code == 404:
                     logger.info(f"User not found and will be dismissed {u}")
                     db().set_users(account_name=u['account_name'], working_status='dismissed')
                     continue
-                logger.debug(f'-- USER {u} {user_req.json()}')
+                logger.info(f'user_req {user_req}')
                 user_staff = user_req.json()
-                full_name = user_staff['firstName'] + ' ' + user_staff['lastName']
-                db().set_users(account_name=user_staff['loginAD'], full_name=full_name)
+                db().set_users(account_name=user_staff['loginAD'], full_name=user_staff['firstName'] + ' ' + user_staff['lastName'], 
+                                                                   first_name=user_staff['firstName'], 
+                                                                   middle_name=user_staff['middleName'])
                 time.sleep(1)
         except Exception as e:
             logger.exception(f'Error in sync user names from staff {u} {user_req} {str(e)}')
+            time.sleep(1)
 
 
 def sync_users_from_ad():
@@ -503,7 +506,8 @@ if __name__ == "__main__":
     warnings.filterwarnings('ignore')
     logger = logging.setup()
     logger.info('- - - START ASSISTANT - - - ')
-    #sync_users_from_staff()
+    sync_users_from_staff()
+    sync_user_names_from_staff()
     # --- SCHEDULING ---
     # Инициализируем расписание
     scheduler = BlockingScheduler(timezone='Europe/Moscow')
