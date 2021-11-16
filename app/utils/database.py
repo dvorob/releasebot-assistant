@@ -97,6 +97,8 @@ class Users(BaseModel):
     admin = IntegerField(default=0)
     date_update = DateField(default=None)
     staff_login = CharField()
+    first_name = CharField(default=None)
+    middle_name = CharField(default=None)
 
 class Workdays_List(BaseModel):
     ddate = DateField(primary_key=True)
@@ -211,7 +213,7 @@ class PostgresPool:
         finally:
             self.db.close()
 
-    def set_users(self, account_name, tg_login=None, working_status=None, full_name=None, email=None, staff_login=None):
+    def set_users(self, account_name, tg_login=None, working_status=None, full_name=None, email=None, staff_login=None, first_name=None, middle_name=None):
         # Записать пользователя в таблицу Users. Переберет параметры и запишет только те из них, что заданы. 
         # Иными словами, если вычитали пользователя из AD с полным набором полей, запись будет создана, поля заполнены.
         # Если передадим tg_id для существующего пользователя, заполнится только это поле
@@ -225,6 +227,10 @@ class PostgresPool:
                 db_users.working_status = working_status
             if full_name:
                 db_users.full_name = full_name.replace('ё', 'е')
+            if first_name:
+                db_users.first_name = first_name
+            if middle_name:
+                db_users.middle_name = middle_name
             if email:
                 db_users.email = email
             if staff_login:
