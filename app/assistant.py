@@ -171,6 +171,9 @@ def timetable_reminder():
                     with requests.session() as session:
                         resp = session.get(config.api_get_timetable, headers=header)
                         msg = (resp.json())['message']
+                        status = (resp.json())['status']
+                    if status == 'error':
+                        msg = f"Доброго утра, {db_users[0]['first_name']} {db_users[0]['middle_name']}. Спешу сообщить о следующем: \n" + msg
                     informer.send_message_to_users([acc], msg)
                     # Exchange при массовых запросах отваливается по таймауту. Добавим sleep
                     time.sleep(2)
