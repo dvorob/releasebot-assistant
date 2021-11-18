@@ -428,7 +428,6 @@ def sync_user_names_from_staff():
             if ('staff_login' in u and u['staff_login'] != None and u['working_status'] != 'dismissed'):
                 user_req = {}
                 staff_login = '' if u['staff_login'] == None else u['staff_login']
-                logger.info(requests.get(config.staff_url + '1c82_lk/hs/staff/v1/persons/' + staff_login))
                 user_req = requests.get(config.staff_url + '1c82_lk/hs/staff/v1/persons/' + staff_login, 
                                         auth=HttpNtlmAuth(config.ex_user, config.ex_pass), verify=False)
                 if user_req.status_code == 404:
