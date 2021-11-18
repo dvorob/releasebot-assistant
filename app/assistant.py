@@ -505,8 +505,8 @@ if __name__ == "__main__":
     warnings.filterwarnings('ignore')
     logger = logging.setup()
     logger.info('- - - START ASSISTANT - - - ')
-    sync_users_from_staff()
-    sync_user_names_from_staff()
+    # sync_users_from_staff()
+    # sync_user_names_from_staff()
     # --- SCHEDULING ---
     # Инициализируем расписание
     scheduler = BlockingScheduler(timezone='Europe/Moscow')
