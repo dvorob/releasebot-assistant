@@ -28,8 +28,8 @@ class ServiceDiscoveryAppRemotesTable:
         app_descs = []
         try:
             c = consul.Consul(host=consul_server, port=443, scheme='https', dc=consul_dc)
-        except:
-            self.logger.exception(f'Exception during connection to consul server{consul_server}')
+        except Exception as e:
+            self.logger.exception(f'Exception during connection to consul server{consul_server} {str(e)}')
         else:
             apps_list = c.kv.get('app/', dc=consul_dc, keys=True)[1]
             for app in apps_list:
@@ -67,7 +67,8 @@ class ServiceDiscoveryAppRemotesTable:
           list: (dict) - {'name': app name, 'remote': remote app name, 'proto': protocol}
         """
         remotes = []
-        remotes_raw = desc['application']['remotes']
+        remotes_raw = desc['application'].get('remotes', {})
+
         for app, proto in remotes_raw.items():
             for pr in proto:
                 remotes.append({'name': desc['application']['name'],
@@ -91,8 +92,8 @@ class ServiceDiscoveryAppRemotesTable:
                 desc = self._get_all_app_descs(consul_dc, consul_server)
                 for app in desc:
                     self.table += self._get_remotes(app)
-            except:
-                self.logger.exception('Exception in _create_table_data')
+            except Exception as e:
+                self.logger.exception(f'Exception in _create_table_data {str(e)}')
                 return False
         return True
 
@@ -122,8 +123,8 @@ class ServiceDiscoveryAppRemotesTable:
         """
         try:
             response = self.session.request(method='GET', url=self.wiki_page_url, verify=False)
-        except:
-            self.logger.exception('Exception during connect to wiki')
+        except Exception as e:
+            self.logger.exception(f'Exception during connect to wiki {str(e)}')
             return False
         else:
             if response.status_code == 200:
@@ -137,8 +138,8 @@ class ServiceDiscoveryAppRemotesTable:
                 }
                 try:
                     response = self.session.request(method='PUT', url=self.wiki_page_url, json=payload, verify=False)
-                except:
-                    self.logger.exception('Exception during connect to wiki')
+                except Exception as e:
+                    self.logger.exception(f'Exception during connect to wiki {str(e)}')
                 else:
                     if response.status_code == 200:
                         self.logger.info('Wiki-table update: SUCCESS')

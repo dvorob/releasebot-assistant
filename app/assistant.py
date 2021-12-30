@@ -538,7 +538,7 @@ if __name__ == "__main__":
     scheduler.add_job(sync_duties_from_exchange, 'cron', day_of_week='*', hour='*', minute='5-59/10')
 
     # Обновление страницы ServiceDiscovery.AppsRemotes
-    scheduler.add_job(update_service_discovery_remotes_wiki, 'cron', day_of_week='*', hour='*', minute='10')
+    scheduler.add_job(update_service_discovery_remotes_wiki, 'cron', day_of_week='*', hour='*', minute='32')
 
     # Проверить релизную доску на наличие новых тасок
     scheduler.add_job(looking_for_new_tasks, 'cron', day_of_week='*', hour='*', minute='*/15')
