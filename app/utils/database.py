@@ -29,6 +29,8 @@ class App_List(BaseModel):
     queues = TextField(default=None)
     bot_enabled = BooleanField(default=None)
     dev_team = CharField(default=None)
+    jira_com = CharField(default=None)
+    locked_by = CharField(default=None)
 
 class Chats(BaseModel):
     id = IntegerField()
@@ -162,6 +164,28 @@ class PostgresPool:
         finally:
             self.db.close()
 
+    def get_applications(self, field, value, operation) -> list:
+        # сходить в таблицу AppList и найти записи по заданному полю с заданным значением. Вернет массив словарей.
+        logger.info(f'get_applications {field} {value} {operation}')
+        result = []
+        try:
+            self.db.connect(reuse_if_open=True)
+            if operation == 'equal':
+                db_apps = App_List.select().where(getattr(App_List, field) == value)
+            elif operation == 'like':
+                db_apps = App_List.select().where(getattr(App_List, field) % value)
+            else:
+                db_apps = []
+            logger.info(db_apps)
+            for v in db_apps:
+                result.append((vars(v))['__data__'])
+            return result
+        except Exception as e:
+            logger.exception(f'exception in get apps {str(e)}')
+            return result
+        finally:
+            self.db.close()
+    
     # ---------------------------------
     # ----- Users ---------------------
 

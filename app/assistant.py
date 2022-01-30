@@ -126,6 +126,23 @@ def inform_admins_about_tasks(admins_group: dict, msg: str):
             logger.info(f'-- INFORM ADMINS ABOUT TASKS: nowhere to send msg {admins_group} {msg}')
 
 
+def locked_releases_reminder():
+    """
+       Отправит в чат ADMSYS инфу по залоченным релизам, в начале дня
+    """
+    try:
+        app_list = db().get_applications('bot_enabled', False, 'equal')
+        if len(app_list) > 0:
+            msg = 'Залоченные приложения (релизы ботом отключены):\n'
+            for app in app_list:
+                msg += f'- <b>{app["app_name"]}</b> заблокировал {app["locked_by"]}\n'
+        else:
+            msg = 'Залоченных приложений нет'
+        informer.send_message_to_users('localADMSYS', msg)
+    except Exception as e:
+        logger.exception(f'Error in locked releases reminder {str(e)}')
+
+
 def get_duty_date(date):
     # Если запрошены дежурные до 10 утра, то это "вчерашние дежурные"
     # Это особенность дежурств в Департаменте
@@ -538,13 +555,16 @@ if __name__ == "__main__":
     scheduler.add_job(sync_duties_from_exchange, 'cron', day_of_week='*', hour='*', minute='5-59/10')
 
     # Обновление страницы ServiceDiscovery.AppsRemotes
-    scheduler.add_job(update_service_discovery_remotes_wiki, 'cron', day_of_week='*', hour='*', minute='10')
+    scheduler.add_job(update_service_discovery_remotes_wiki, 'cron', day_of_week='*', hour='*', minute='32')
 
     # Проверить релизную доску на наличие новых тасок
     scheduler.add_job(looking_for_new_tasks, 'cron', day_of_week='*', hour='*', minute='*/15')
 
     # Проверить релизную доску на наличие неразобранных тасок
     scheduler.add_job(unassigned_task_reminder, 'cron', day_of_week='mon-fri', hour='10', minute='15')
+
+    # Прислать нотификацию со списком залоченных релизов
+    scheduler.add_job(locked_releases_reminder, 'cron', day_of_week='mon-fri', hour='10', minute='10')
 
     # Запускаем расписание
     scheduler.start()
