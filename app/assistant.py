@@ -241,6 +241,8 @@ def duty_reminder_tststnd_daily():
     msg = f"Будь сильным: <b>ты дежуришь по стендам сегодня</b>.\nПроверь, что:\n\
        1. Автообновление <b>int</b> прошло успешно и <a href='https://jira.yooteam.ru/issues/?jql=labels%20%3D%20jenkins.SchemeUpdate%20and%20status%20!%3D%20Closed%20and%20status%20!%3D%20Resolved'>здесь</a>\
        нет задач. Перезапусти обновление, если оно не прошло.\n\
+       1a. Автообновление остальных схем можно проверить тут <a href='https://grafana-dev.yooteam.ru/d/iPuc_si7k/cloud-scheme-update-failed-count?orgId=1'>дашборд</a>.\n\
+       Если фейлов неприлично много, стоит уточнить причину.
        2. Ночные синки успешны и <a href='https://jira.yooteam.ru/issues/?jql=labels%20%3D%20cloud%20and%20status%20!%3D%20Closed%20and%20status%20!%3D%20Resolved'>здесь</a> нет задач.\n\
        Днем проверь как <a href='https://jenkins-dev.yamoney.ru/job/CLOUD/job/Base/job/recreate_basetest/lastBuild'>пересоздалась btest</a>. Важно дотолкать ее до тестов, чтобы QA было что разбирать.\n\
        Если в результате чекапа есть повторяющиеся проблемы – сделай задачи на плановую починку."
