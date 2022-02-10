@@ -4,6 +4,7 @@
 Работа с БД в PostgreSQL
 """
 # External
+from email.policy import default
 import json
 from datetime import datetime
 from peewee import *
@@ -87,6 +88,11 @@ class Releases_List(BaseModel):
     is_static_released = BooleanField(default=None)
     notifications_sent = TextField(default=None)
 
+class Teams(BaseModel):
+    id = IntegerField(primary_key=True)
+    team_key = CharField
+    team_name = CharField
+
 class Users(BaseModel):
     id = IntegerField(primary_key=True)
     account_name = CharField(unique=True)
@@ -101,6 +107,10 @@ class Users(BaseModel):
     staff_login = CharField()
     first_name = CharField(default=None)
     middle_name = CharField(default=None)
+    ops = IntegerField(default=0)
+    team_key = CharField(default=None)
+    team_name = CharField(default=None)
+    department = CharField(default=None)
 
 class Workdays_List(BaseModel):
     ddate = DateField(primary_key=True)
@@ -237,12 +247,13 @@ class PostgresPool:
         finally:
             self.db.close()
 
-    def set_users(self, account_name, tg_login=None, working_status=None, full_name=None, email=None, staff_login=None, first_name=None, middle_name=None):
+    def set_users(self, account_name, tg_login=None, working_status=None, full_name=None, email=None, staff_login=None, first_name=None, middle_name=None,
+                  ops=None, team_key=None, team_name=None, department=None):
         # Записать пользователя в таблицу Users. Переберет параметры и запишет только те из них, что заданы. 
         # Иными словами, если вычитали пользователя из AD с полным набором полей, запись будет создана, поля заполнены.
         # Если передадим tg_id для существующего пользователя, заполнится только это поле
         try:
-            logger.debug(f'{account_name}, {tg_login}, {working_status}, {email}')
+            logger.debug(f'{account_name}, {tg_login}, {working_status}, {email} {team_key} {team_name} {department}')
             self.db.connect(reuse_if_open=True)
             db_users, _ = Users.get_or_create(account_name=account_name)
             if tg_login:
@@ -259,6 +270,14 @@ class PostgresPool:
                 db_users.email = email
             if staff_login:
                 db_users.staff_login = staff_login
+            if ops:
+                db_users.ops = ops
+            if team_key:
+                db_users.team_key = team_key
+            if team_name:
+                db_users.team_name = team_name
+            if department:
+                db_users.department = department
             db_users.date_update = datetime.now()
             db_users.save()
         except Exception as e:
@@ -530,6 +549,24 @@ class PostgresPool:
         except Exception as e:
             logger.exception('exception in append task notification sent %s', e)
             return result
+        finally:
+            self.db.close()
+
+
+    # ---------------------------------
+    # ----- Teams ---------------------
+
+    def get_team_key(self, team_name) -> str:
+        # Сходить в таблицу teams и разрезолвить имя отдела в ключ
+        try:
+            self.db.connect(reuse_if_open=True)
+            db_query = Teams.select().where(Teams.team_name == team_name)
+            for v in db_query:
+                res = (vars(v))['__data__'])
+                logger.info(f'{team_name} {res}')
+                return res['team_key']
+        except Exception as e:
+            logger.exception('exception in get team key %s', str(e))
         finally:
             self.db.close()
 
