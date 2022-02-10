@@ -5,6 +5,7 @@
     запуск джоб по расписанию, статистика и прочее
 """
 # External
+from pickle import NONE
 import aiohttp
 from bs4 import BeautifulSoup
 import json
@@ -449,6 +450,10 @@ def sync_user_names_from_staff():
         try:
             if ('staff_login' in u and u['staff_login'] != None and u['working_status'] != 'dismissed'):
                 user_req = {}
+                ops = None
+                team_name = None
+                team_key = None
+                department = None
                 staff_login = '' if u['staff_login'] == None else u['staff_login']
                 user_req = requests.get(config.staff_url + '1c82_lk/hs/staff/v1/persons/' + staff_login, 
                                         auth=HttpNtlmAuth(config.ex_user, config.ex_pass), verify=False)
@@ -456,11 +461,17 @@ def sync_user_names_from_staff():
                     logger.info(f"User not found and will be dismissed {u}")
                     db().set_users(account_name=u['account_name'], working_status='dismissed')
                     continue
-                logger.info(f'user_req {user_req}')
                 user_staff = user_req.json()
-                db().set_users(account_name=user_staff['loginAD'], full_name=user_staff['firstName'] + ' ' + user_staff['lastName'], 
-                                                                   first_name=user_staff['firstName'], 
-                                                                   middle_name=user_staff['middleName'])
+                if 'departments'in user_staff:
+                    if len(user_staff['departments']) >= 0:
+                        team_name = user_staff['departments'][0]['name']
+                    if len(user_staff['departments']) >= 1:
+                        department = user_staff['departments'][1]['name']
+                if department == 'Департамент эксплуатации':
+                    team_key = db().get_team_key(team_name)
+                    ops = 1
+                db().set_users(account_name=user_staff['loginAD'], full_name=user_staff['firstName'] + ' ' + user_staff['lastName'], first_name=user_staff['firstName'], 
+                               middle_name=user_staff['middleName'], ops=ops, team_name=team_name, department=department, team_key=team_key)
                 time.sleep(1)
         except Exception as e:
             logger.exception(f'Error in sync user names from staff {u} {user_req} {str(e)}')
@@ -528,7 +539,7 @@ if __name__ == "__main__":
     logger = logging.setup()
     logger.info('- - - START ASSISTANT - - - ')
     # sync_users_from_staff()
-    # sync_user_names_from_staff()
+    sync_user_names_from_staff()
     # --- SCHEDULING ---
     # Инициализируем расписание
     scheduler = BlockingScheduler(timezone='Europe/Moscow')
