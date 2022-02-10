@@ -562,7 +562,7 @@ class PostgresPool:
             self.db.connect(reuse_if_open=True)
             db_query = Teams.select().where(Teams.team_name == team_name)
             for v in db_query:
-                res = (vars(v))['__data__'])
+                res = (vars(v))['__data__']
                 logger.info(f'{team_name} {res}')
                 return res['team_key']
         except Exception as e:
