@@ -8,7 +8,7 @@ from playhouse.pool import PostgresqlDatabase, PooledPostgresqlDatabase
 ex_host = 'mail-mx10.yamoney.ru'
 ex_user = os.environ.get('exchange_user')
 ex_pass = os.environ.get('exchange_pass')
-ex_cal = 'adminsonduty@yamoney.ru'
+ex_cal = 'adminsonduty@yoomoney.ru'
 ex_tz = 'Europe/Moscow'
 
 jira_host = 'https://jira.yooteam.ru'
