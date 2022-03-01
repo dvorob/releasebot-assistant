@@ -258,7 +258,7 @@ def sync_duties_from_exchange():
     """
     try:
         logger.info('-- SYNC DUTIES FROM EXCHANGE')
-        duty_areas = ['ADMSYS', 'NOC', 'ADMWIN', 'IPTEL', 'ADMMSSQL', 'PROCESS', 'DEVOPS', 'TECH', 'INFOSEC', 'ora', 'pg']
+        duty_areas = ['ADMSYS', 'NOC', 'ADMWIN', 'IPTEL', 'ADMMSSQL', 'PROCESS', 'DEVOPS', 'TECH', 'INFOSEC', 'ora', 'pg', 'ORACLE', 'POSTGRES']
 
         # Go to Exchange calendar and get duites for 30 next days
         for i in range(0, 30):
@@ -275,9 +275,8 @@ def sync_duties_from_exchange():
             old_msg, new_msg = ex_duty(cal_start, cal_end)
             msg += old_msg
 
-            logger.debug('I find duty for %s : %s', duty_date.strftime("%Y-%m-%d"), msg)
+            logger.info('I find duty for %s : %s', duty_date.strftime("%Y-%m-%d"), msg)
             # Разобрать сообщение из календаря в формат ["area (зона ответственности)", "имя дежурного", "аккаунт деужурного"]
-            duty_list = []
             for msg in new_msg:
                 msg = re.sub(r'—', '-', msg)
                 dl = {'duty_date': duty_date, 'full_text': msg, 'area' : '', 'full_name': '', 'account_name': '', 'tg_login': ''}
@@ -464,9 +463,11 @@ def sync_user_names_from_staff():
                 user_staff = user_req.json()
                 if 'departments'in user_staff:
                     if len(user_staff['departments']) >= 0:
-                        team_name = user_staff['departments'][0]['name']
+                        if 'name' in user_staff['departments'][0]:
+                            team_name = user_staff['departments'][0]['name']
                     if len(user_staff['departments']) >= 1:
-                        department = user_staff['departments'][1]['name']
+                        if 'name' in user_staff['departments'][1]:
+                            department = user_staff['departments'][1]['name']
                 if department == 'Департамент эксплуатации':
                     team_key = db().get_team_key(team_name)
                     ops = 1
