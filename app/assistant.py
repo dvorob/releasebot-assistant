@@ -462,10 +462,10 @@ def sync_user_names_from_staff():
                     continue
                 user_staff = user_req.json()
                 if 'departments'in user_staff:
-                    if len(user_staff['departments']) >= 0:
+                    if len(user_staff['departments']) > 0:
                         if 'name' in user_staff['departments'][0]:
                             team_name = user_staff['departments'][0]['name']
-                    if len(user_staff['departments']) >= 1:
+                    if len(user_staff['departments']) > 1:
                         if 'name' in user_staff['departments'][1]:
                             department = user_staff['departments'][1]['name']
                 if department == 'Департамент эксплуатации':
