@@ -130,16 +130,18 @@ def unassigned_task_reminder():
         if len(unassigned_tasks) > 0:
             msg = f'\n<b>Уважаемые, {group}, у вас {len(unassigned_tasks)} неразобранных задач в очереди</b>:\n'
             for issue in unassigned_tasks:
-                sla_date = datetime.strptime(_get_field_value(issue.fields, 'customfield_17095', value=True)[0:19], '%Y-%m-%dT%H:%M:%S')
-                if sla_date - datetime.now() < timedelta(hours=8):
-                    msg += f':flame:'
+                sla_str = _get_field_value(issue.fields, 'customfield_17095', value=True)
+                if sla_str != None:
+                    # Подсветим в тексте, если подгорает SLA
+                    if datetime.strptime(sla_str[0:19], '%Y-%m-%dT%H:%M:%S') - datetime.now() < timedelta(hours=8):
+                        msg += f':fire:'
                 msg += f' <a href="{config.jira_host}/browse/{issue.key}">{issue.key}. {issue.fields.summary}</a> \n'
                 total_tasks += len(unassigned_tasks)
                 tasks_id += ' '.join([issue.key for issue in unassigned_tasks])
             # немного статистики по групам для анализа
             logger.info(f'For {group} found {len(unassigned_tasks)} tasks: {[issue.key for issue in unassigned_tasks]}')
-        informer.send_message_to_users('ymvorobevda', msg)
-        #inform_admins_about_tasks(config.jira_unassigned_tasks_groups_inform[group], msg)
+        #informer.send_message_to_users(accounts='ymvorobevda', message=msg, emoji=True)
+        inform_admins_about_tasks(config.jira_unassigned_tasks_groups_inform[group], msg)
 
 
 def inform_admins_about_tasks(admins_group: dict, msg: str):
@@ -149,7 +151,7 @@ def inform_admins_about_tasks(admins_group: dict, msg: str):
     if ((int(datetime.today().strftime("%H")) in range(10, 20)) and
         (db().is_workday(datetime.today().strftime("%Y-%m-%d")))):
         if 'channel' in admins_group:
-            informer.send_message_to_users([admins_group['channel']], msg)
+            informer.send_message_to_users(accounts=[admins_group['channel']], message=msg, emoji=True)
         elif 'duty_area' in admins_group:
             informer.inform_duty([admins_group['duty_area']], msg)
         else:
@@ -569,7 +571,7 @@ if __name__ == "__main__":
     logger = logging.setup()
     logger.info('- - - START ASSISTANT - - - ')
     # sync_users_from_staff()
-    unassigned_task_reminder()
+    # unassigned_task_reminder()
     # --- SCHEDULING ---
     # Инициализируем расписание
     scheduler = BlockingScheduler(timezone='Europe/Moscow')
