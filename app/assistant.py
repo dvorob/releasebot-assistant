@@ -32,6 +32,30 @@ from utils.jiratools import JiraConnection, jira_get_components
 from utils.consultowiki import ServiceDiscoveryAppRemotesTable
 
 
+def _get_field_value(fields, customfield, key=False, value=False, name=False):
+    # Обёртка для работы с customField джиры. Т.к. каждое поле содержит в себе вложенные конструкции
+    # разной степени сложности, для упрощения прочего кода все костыли вынесены сюда.
+    # К полю можно обратиться, зная, в чем именно содержится значение - в ключе, имени или значении.
+    try:
+        if hasattr(fields, customfield):
+            field = getattr(fields, customfield)
+            if field:
+                if type(field) is list:
+                    field = field[0]
+                if key and hasattr(field, 'key'):
+                    return field.key
+                elif value and hasattr(field, 'value'):
+                    return field.value
+                elif name and hasattr(field, 'name'):
+                    return field.name
+                else:
+                    return field
+        return None
+    except Exception as e:
+        logger.exception(f'Error in get field value {str(e)} {fields} {customfield}')
+        return False
+
+
 def calculate_statistics():
     """
         Considers statistics, format in human readable format
@@ -71,7 +95,7 @@ def looking_for_new_tasks():
     for group in config.jira_new_tasks_groups_inform.keys():
         group_tasks = 0
         # получаем список задач из джиры
-        new_tasks = JiraConnection().search_issues(f'filter={config.jira_new_tasks_groups_inform[group]["filter"]}')
+        new_tasks = JiraConnection().search_issues(f'filter={config.jira_new_tasks_groups_inform[group]["filter"]} AND assignee is EMPTY')
 
         # фильтруем список задач за последние 15 минут в dict где key имя группы и value список задач
         msg = ''
@@ -101,16 +125,21 @@ def unassigned_task_reminder():
     tasks_id = ''
     for group in config.jira_unassigned_tasks_groups_inform.keys():
         # получаем список задач из джиры
-        unassigned_tasks = JiraConnection().search_issues(f'filter={config.jira_unassigned_tasks_groups_inform[group]["filter"]}')
+        unassigned_tasks = JiraConnection().search_issues(f'filter={config.jira_unassigned_tasks_groups_inform[group]["filter"]} AND assignee is EMPTY')
         msg = f'\nУважаемые, {group}, у вас <b>нет</b> неразобранных задач в очереди\n'
         if len(unassigned_tasks) > 0:
             msg = f'\n<b>Уважаемые, {group}, у вас {len(unassigned_tasks)} неразобранных задач в очереди</b>:\n'
-            msg += '\n'.join([f'<a href="{config.jira_host}/browse/{issue.key}">{issue.key}. {issue.fields.summary}</a>' for issue in unassigned_tasks])
-            total_tasks += len(unassigned_tasks)
-            tasks_id += ' '.join([issue.key for issue in unassigned_tasks])
+            for issue in unassigned_tasks:
+                sla_date = datetime.strptime(_get_field_value(issue.fields, 'customfield_17095', value=True)[0:19], '%Y-%m-%dT%H:%M:%S')
+                if sla_date - datetime.now() < timedelta(hours=8):
+                    msg += f':flame:'
+                msg += f' <a href="{config.jira_host}/browse/{issue.key}">{issue.key}. {issue.fields.summary}</a> \n'
+                total_tasks += len(unassigned_tasks)
+                tasks_id += ' '.join([issue.key for issue in unassigned_tasks])
             # немного статистики по групам для анализа
             logger.info(f'For {group} found {len(unassigned_tasks)} tasks: {[issue.key for issue in unassigned_tasks]}')
-        inform_admins_about_tasks(config.jira_unassigned_tasks_groups_inform[group], msg)
+        informer.send_message_to_users('ymvorobevda', msg)
+        #inform_admins_about_tasks(config.jira_unassigned_tasks_groups_inform[group], msg)
 
 
 def inform_admins_about_tasks(admins_group: dict, msg: str):
@@ -540,7 +569,7 @@ if __name__ == "__main__":
     logger = logging.setup()
     logger.info('- - - START ASSISTANT - - - ')
     # sync_users_from_staff()
-    sync_user_names_from_staff()
+    unassigned_task_reminder()
     # --- SCHEDULING ---
     # Инициализируем расписание
     scheduler = BlockingScheduler(timezone='Europe/Moscow')
