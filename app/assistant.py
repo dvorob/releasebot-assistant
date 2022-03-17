@@ -121,7 +121,6 @@ def unassigned_task_reminder():
        Отправить весь список неразобранных тасок утром
     """
     logger.info('-- LOOKING FOR UNASSIGNED TASKS')
-    total_tasks = 0
     tasks_id = ''
     for group in config.jira_unassigned_tasks_groups_inform.keys():
         # получаем список задач из джиры
@@ -136,12 +135,33 @@ def unassigned_task_reminder():
                     if datetime.strptime(sla_str[0:19], '%Y-%m-%dT%H:%M:%S') - datetime.now() < timedelta(hours=8):
                         msg += f':fire:'
                 msg += f' <a href="{config.jira_host}/browse/{issue.key}">{issue.key}. {issue.fields.summary}</a> \n'
-                total_tasks += len(unassigned_tasks)
                 tasks_id += ' '.join([issue.key for issue in unassigned_tasks])
             # немного статистики по групам для анализа
             logger.info(f'For {group} found {len(unassigned_tasks)} tasks: {[issue.key for issue in unassigned_tasks]}')
         #informer.send_message_to_users(accounts='ymvorobevda', message=msg, emoji=True)
         inform_admins_about_tasks(config.jira_unassigned_tasks_groups_inform[group], msg)
+
+
+def expiring_task_reminder():
+    """
+       Отправить список подгоряющих тасок с исполнителями (подгорающие неразобранные в методе unassigned_task_reminder)
+    """
+    logger.info('-- LOOKING FOR EXPIRING TASKS')
+    for group in config.jira_unassigned_tasks_groups_inform.keys():
+        is_something_expiring = False
+        # получаем список задач из джиры
+        expiring_tasks = JiraConnection().search_issues(f'filter={config.jira_unassigned_tasks_groups_inform[group]["filter"]} AND assignee is not EMPTY')
+        if len(expiring_tasks) > 0:
+            msg = f'\n<b>SLA просрачивается у следующих задач:</b>\n'
+            for issue in expiring_tasks:
+                sla_str = _get_field_value(issue.fields, 'customfield_17095', value=True)
+                if sla_str != None:
+                    # Подсветим в тексте, если подгорает SLA
+                    if datetime.strptime(sla_str[0:19], '%Y-%m-%dT%H:%M:%S') - datetime.now() < timedelta(hours=8):
+                        is_something_expiring = True
+                        msg += f':fire: <a href="{config.jira_host}/browse/{issue.key}">{issue.key}. {issue.fields.summary} // {issue.fields.assignee}</a> \n'
+        if is_something_expiring == True:
+            inform_admins_about_tasks(config.jira_unassigned_tasks_groups_inform[group], msg)
 
 
 def inform_admins_about_tasks(admins_group: dict, msg: str):
@@ -570,7 +590,7 @@ if __name__ == "__main__":
     warnings.filterwarnings('ignore')
     logger = logging.setup()
     logger.info('- - - START ASSISTANT - - - ')
-    # sync_users_from_staff()
+    expiring_task_reminder()
     # unassigned_task_reminder()
     # --- SCHEDULING ---
     # Инициализируем расписание
@@ -607,6 +627,9 @@ if __name__ == "__main__":
 
     # Проверить релизную доску на наличие неразобранных тасок
     scheduler.add_job(unassigned_task_reminder, 'cron', day_of_week='mon-fri', hour='10', minute='15')
+
+    # Проверить релизную доску на наличие просрачиваемых тасок
+    scheduler.add_job(expiring_task_reminder, 'cron', day_of_week='mon-fri', hour='10', minute='16')
 
     # Прислать нотификацию со списком залоченных релизов
     scheduler.add_job(locked_releases_reminder, 'cron', day_of_week='mon-fri', hour='10', minute='10')
