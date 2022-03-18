@@ -124,7 +124,7 @@ def unassigned_task_reminder():
     tasks_id = ''
     for group in config.jira_unassigned_tasks_groups_inform.keys():
         # получаем список задач из джиры
-        unassigned_tasks = JiraConnection().search_issues(f'filter={config.jira_unassigned_tasks_groups_inform[group]["filter"]} AND assignee is EMPTY')
+        unassigned_tasks = JiraConnection().search_issues(f'filter={config.jira_unassigned_tasks_groups_inform[group]["filter"]} AND (issuetype = Request OR issuetype = Доступ) AND assignee is EMPTY')
         msg = f'\nУважаемые, {group}, у вас <b>нет</b> неразобранных задач в очереди\n'
         if len(unassigned_tasks) > 0:
             msg = f'\n<b>Уважаемые, {group}, у вас {len(unassigned_tasks)} неразобранных задач в очереди</b>:\n'
@@ -150,7 +150,7 @@ def expiring_task_reminder():
     for group in config.jira_unassigned_tasks_groups_inform.keys():
         is_something_expiring = False
         # получаем список задач из джиры
-        expiring_tasks = JiraConnection().search_issues(f'filter={config.jira_unassigned_tasks_groups_inform[group]["filter"]} AND assignee is not EMPTY')
+        expiring_tasks = JiraConnection().search_issues(f'filter={config.jira_unassigned_tasks_groups_inform[group]["filter"]} AND (issuetype = Request OR issuetype = Доступ) AND assignee is not EMPTY')
         if len(expiring_tasks) > 0:
             msg = f'\n<b>SLA просрачивается у следующих задач:</b>\n'
             for issue in expiring_tasks:
