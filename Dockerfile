@@ -1,4 +1,4 @@
-FROM docker.nexus.yamoney.ru/yamoney/ubuntu-20-04-ym
+FROM docker-ym.nexus.yooteam.ru/yoomoney/ubuntu-20-04-ym:1.0.3
 
 WORKDIR /opt
 

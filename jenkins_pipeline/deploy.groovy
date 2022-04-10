@@ -1,7 +1,7 @@
 node('docker') {
     ansiColor('xterm') {
         cleanWs()
-        def dockerImageUrl = "docker.nexus.yamoney.ru/yamoney/ubuntu-20-04-ym"
+        def dockerImageUrl = "docker-ym.nexus.yooteam.ru/yoomoney/ubuntu-20-04-ym"
         def registry = 'docker-ym.nexus.yooteam.ru'
         def image = 'releasebot-assistant'
         def home_dir = '/var/lib/jenkins/workspace/Common/releasebot/assistant'
