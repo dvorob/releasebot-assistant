@@ -102,12 +102,12 @@ class Users(BaseModel):
     working_status = CharField()
     email = CharField()
     notification = CharField(default='none')
-    admin = IntegerField(default=0)
-    date_update = DateField(default=None)
+    is_admin = IntegerField(default=0)
+    date_update = DateField()
     staff_login = CharField()
-    first_name = CharField(default=None)
-    middle_name = CharField(default=None)
-    ops = IntegerField(default=0)
+    first_name = CharField()
+    middle_name = CharField()
+    is_ops = IntegerField(default=0)
     team_key = CharField(default=None)
     team_name = CharField(default=None)
     department = CharField(default=None)
@@ -202,7 +202,7 @@ class PostgresPool:
     def get_users(self, field, value, operation) -> list:
         # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
         # например, найти Воробьева можно запросом db_get_users('account_name', 'ymvorobevda')
-        # всех админов - запросом db_get_users('admin', 1)
+        # всех админов - запросом db_get_users('is_admin', 1)
         logger.info('db_get_users param1 param2 %s %s', field, value)
         result = []
         try:
@@ -225,7 +225,7 @@ class PostgresPool:
     def get_user_by_fullname(self, value) -> list:
         # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
         # например, найти Воробьева можно запросом db_get_users('account_name', 'ymvorobevda')
-        # всех админов - запросом db_get_users('admin', 1)
+        # всех админов - запросом db_get_users('is_admin', 1)
         result = []
         try:
             self.db.connect(reuse_if_open=True)
