@@ -195,20 +195,11 @@ def locked_releases_reminder():
         logger.exception(f'Error in locked releases reminder {str(e)}')
 
 
-def get_duty_date(date):
-    # Если запрошены дежурные до 10 утра, то это "вчерашние дежурные"
-    # Это особенность дежурств в Департаменте
-    if int(datetime.today().strftime("%H")) < int(10):
-        return date - timedelta(1)
-    else:
-        return date
-
-
 def duty_informing_from_schedule(after_days, area, msg):
     """
         Отправить уведомление дежурным на заданную дату, вычисляемую по отступу от текущей
     """
-    duty_date = get_duty_date(datetime.today()) + timedelta(after_days)
+    duty_date = _get_duty_date(datetime.today()) + timedelta(after_days)
     dutymen_array = db().get_duty_in_area(duty_date, area)
     logger.info(f'Duty informing from schedule {after_days} {area} {msg} {dutymen_array}')
     if len(dutymen_array) > 0:
@@ -259,6 +250,16 @@ def duty_reminder_daily_morning():
     duty_informing_from_schedule(1, 'ADMSYS(биллинг)', (msg % 'ADMSYS(биллинг)'))
     duty_informing_from_schedule(1, 'ADMSYS(портал)', (msg % 'ADMSYS(портал)'))
     duty_informing_from_schedule(1, 'ADMSYS(инфра)', (msg % 'ADMSYS(инфра)'))
+    for acc in db().get_all_users_with_subscription('duties'):
+        try:
+            db_users = db().get_users('account_name', acc, 'equal')
+            if db_users[0]['working_status'] != 'dismissed':
+                duty_date = datetime.today().replace(hour=0, minute=0, second=0, microsecond=0)
+                duties = db().get_duty_by_account(duty_date, acc)
+                duty_informing_from_schedule(1, duties[0]['area'], (msg % duties[0]['area']))
+                time.sleep(1)
+        except Exception as e:
+            logger.exception('exception in duty reminder %s', str(e))
 
 
 def duty_reminder_daily_evening():
@@ -289,16 +290,19 @@ def duty_reminder_tststnd_daily():
     """
         Уведомления дежурных по стендам
     """
-    logger.info('duty reminder tststnd daily started')
-    msg = f"Будь сильным: <b>ты дежуришь по стендам сегодня</b>.\nПроверь, что:\n\
-       1. Автообновление <b>int</b> прошло успешно и <a href='https://jira.yooteam.ru/issues/?jql=labels%20%3D%20jenkins.SchemeUpdate%20and%20status%20!%3D%20Closed%20and%20status%20!%3D%20Resolved'>здесь</a>\
-       нет задач. Перезапусти обновление, если оно не прошло.\n\
-       1a. Автообновление остальных схем можно проверить тут <a href='https://grafana-dev.yooteam.ru/d/iPuc_si7k/cloud-scheme-update-failed-count?orgId=1'>дашборд</a>.\n\
-       Если фейлов неприлично много, стоит уточнить причину.\n\
-       2. Ночные синки успешны и <a href='https://jira.yooteam.ru/issues/?jql=labels%20%3D%20cloud%20and%20status%20!%3D%20Closed%20and%20status%20!%3D%20Resolved'>здесь</a> нет задач.\n\
-       Днем проверь как <a href='https://jenkins-dev.yamoney.ru/job/CLOUD/job/Base/job/recreate_basetest/lastBuild'>пересоздалась btest</a>. Важно дотолкать ее до тестов, чтобы QA было что разбирать.\n\
-       Если в результате чекапа есть повторяющиеся проблемы – сделай задачи на плановую починку."
-    duty_informing_from_schedule(1, 'ADMSYS(tststnd)', msg)
+    today = datetime.today().strftime("%Y-%m-%d")
+    if db().is_workday(today):
+        logger.info('duty reminder tststnd daily started')
+        msg = f"Будь сильным: <b>ты дежуришь по стендам сегодня</b>.\nПроверь, что:\n\
+        1. Автообновление <b>int</b> прошло успешно и <a href='https://jira.yooteam.ru/issues/?jql=labels%20%3D%20jenkins.SchemeUpdate%20and%20status%20!%3D%20Closed%20and%20status%20!%3D%20Resolved'>здесь</a>\
+        нет задач. Перезапусти обновление, если оно не прошло.\n\
+        1a. Автообновление остальных схем можно проверить тут <a href='https://grafana-dev.yooteam.ru/d/iPuc_si7k/cloud-scheme-update-failed-count?orgId=1'>дашборд</a>.\n\
+        Если фейлов неприлично много, стоит уточнить причину.\n\
+        2. Ночные синки успешны и <a href='https://jira.yooteam.ru/issues/?jql=labels%20%3D%20cloud%20and%20status%20!%3D%20Closed%20and%20status%20!%3D%20Resolved'>здесь</a> нет задач.\n\
+        Днем проверь как <a href='https://jenkins-dev.yamoney.ru/job/CLOUD/job/Base/job/recreate_basetest/lastBuild'>пересоздалась btest</a>. Важно дотолкать ее до тестов, чтобы QA было что разбирать.\n\
+        Если в результате чекапа есть повторяющиеся проблемы – сделай задачи на плановую починку."
+
+        duty_informing_from_schedule(1, 'ADMSYS(tststnd)', msg)
 
 
 def sync_duties_from_exchange():
@@ -582,6 +586,15 @@ def update_service_discovery_remotes_wiki():
     consul_to_wiki = ServiceDiscoveryAppRemotesTable(config.jira_user, config.jira_pass)
     html = consul_to_wiki.create_html_table()
     consul_to_wiki.push_to_wiki(html)
+
+
+def _get_duty_date(date):
+    # Если запрошены дежурные до 10 утра, то это "вчерашние дежурные"
+    # Это особенность дежурств в Департаменте
+    if int(datetime.today().strftime("%H")) < int(10):
+        return date - timedelta(1)
+    else:
+        return date
 
 
 if __name__ == "__main__":
