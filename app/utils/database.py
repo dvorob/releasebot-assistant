@@ -349,6 +349,24 @@ class PostgresPool:
         finally:
             self.db.close()
     
+    def get_duty_by_account(self, duty_date, account_name) -> list:
+        # Сходить в таблицу duty_list за расписание дежурств конкретного администратора на конкретную дату
+        try:
+            self.db.connect(reuse_if_open=True)
+            result = []
+            logger.info('get duty by account %s %s', duty_date, account_name)
+            db_query = (Duty_List
+                        .select()
+                        .where(Duty_List.duty_date >= duty_date, Duty_List.account_name == account_name)
+                        .order_by(Duty_List.duty_date.asc()))
+            for v in db_query:
+                result.append((vars(v))['__data__'])
+            logger.info(f'---- YOUR DUTIES {result}')
+            return result
+        except Exception as e:
+            logger.exception('exception in db get duty by account %s', str(e))
+        finally:
+            self.db.close()
     # ---------------------------------
     # ----- Workdays ------------------
 
