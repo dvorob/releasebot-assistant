@@ -320,6 +320,21 @@ class PostgresPool:
     # ---------------------------------
     # ----- DutyList ------------------
 
+    def get_duty(self, duty_date) -> list:
+        # Сходить в таблицу xerxes.duty_list за дежурными на заданную дату
+        try:
+            self.db.connect(reuse_if_open=True)
+            result = []
+            db_query = Duty_List.select().where(Duty_List.duty_date == duty_date)
+            for v in db_query:
+                result.append((vars(v))['__data__'])
+            logger.debug('get duty for %s %s', duty_date, result)
+            return result
+        except Exception as e:
+            logger.exception('exception in db get duty %s', str(e))
+        finally:
+            self.db.close()
+
     def get_duty_in_area(self, duty_date, area) -> list:
         # Сходить в таблицу xerxes.duty_list за дежурными на заданную дату и зону ответственности
         try:
@@ -355,10 +370,7 @@ class PostgresPool:
             self.db.connect(reuse_if_open=True)
             result = []
             logger.info('get duty by account %s %s', duty_date, account_name)
-            db_query = (Duty_List
-                        .select()
-                        .where(Duty_List.duty_date >= duty_date, Duty_List.account_name == account_name)
-                        .order_by(Duty_List.duty_date.asc()))
+            db_query = Duty_List.select().where(Duty_List.duty_date == duty_date)
             for v in db_query:
                 result.append((vars(v))['__data__'])
             logger.info(f'---- YOUR DUTIES {result}')

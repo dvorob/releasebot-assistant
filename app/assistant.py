@@ -227,7 +227,6 @@ def timetable_reminder():
                 db_users = db().get_users('account_name', acc, 'equal')
                 if db_users[0]['working_status'] != 'dismissed':
                     header = {'email': db_users[0]['email'], 'afterdays': str(0)}
-                    responses = []
                     with requests.session() as session:
                         resp = session.get(config.api_get_timetable, headers=header)
                         msg = (resp.json())['message']
@@ -245,28 +244,34 @@ def timetable_reminder():
         logger.info('No, today is a holiday, I don\'t want to send timetable reminder')
 
 
-def duty_reminder_daily_morning():
-    msg = 'Крепись, ты сегодня дежуришь по %s. С 10:00, если что.'
-    duty_informing_from_schedule(1, 'ADMSYS(биллинг)', (msg % 'ADMSYS(биллинг)'))
-    duty_informing_from_schedule(1, 'ADMSYS(портал)', (msg % 'ADMSYS(портал)'))
-    duty_informing_from_schedule(1, 'ADMSYS(инфра)', (msg % 'ADMSYS(инфра)'))
-    for acc in db().get_all_users_with_subscription('duties'):
+def _notify_duties_from_list(users: list, duties: list, msg: str):
+    for acc in users:
         try:
             db_users = db().get_users('account_name', acc, 'equal')
             if db_users[0]['working_status'] != 'dismissed':
-                duty_date = datetime.today().replace(hour=0, minute=0, second=0, microsecond=0)
-                duties = db().get_duty_by_account(duty_date, acc)
-                duty_informing_from_schedule(1, duties[0]['area'], (msg % duties[0]['area']))
+                for duty in duties:
+                    logger.info(f'--- {duty["account_name"]} {acc}')
+                    if (duty['account_name'] == acc and acc == 'ymvorobevda'):
+                        informer.send_message_to_users(accounts=acc, message=msg, emoji=True)
                 time.sleep(1)
         except Exception as e:
             logger.exception('exception in duty reminder %s', str(e))
 
 
+def duty_reminder_daily_morning():
+    msg = 'Крепись, ты сегодня дежуришь по %s. С 10:00, если что.'
+    duty_date = _get_duty_date(datetime.today()) + timedelta(0)
+    duties_list = db().get_duty(duty_date)
+    subscribed_dutymen_list = db().get_all_users_with_subscription('duties')
+    _notify_duties_from_list(users=subscribed_dutymen_list, duties=duties_list, msg=msg)
+
+
 def duty_reminder_daily_evening():
     msg = 'Напоминаю, ты <b>завтра</b> дежуришь по %s. Будь готов :)'
-    duty_informing_from_schedule(1, 'ADMSYS(биллинг)', (msg % 'ADMSYS(биллинг)'))
-    duty_informing_from_schedule(1, 'ADMSYS(портал)', (msg % 'ADMSYS(портал)'))
-    duty_informing_from_schedule(1, 'ADMSYS(инфра)', (msg % 'ADMSYS(инфра)'))
+    duty_date = _get_duty_date(datetime.today()) + timedelta(1)
+    duties_list = db().get_duty(duty_date)
+    subscribed_dutymen_list = db().get_all_users_with_subscription('duties')
+    _notify_duties_from_list(users=subscribed_dutymen_list, duties=duties_list, msg=msg)
 
 
 def duty_reminder_weekend():
@@ -276,14 +281,16 @@ def duty_reminder_weekend():
     logger.info('duty reminder weekend started')
     # Субботние дежурные
     msg = 'Ты дежуришь в субботу по %s'
-    duty_informing_from_schedule(1, 'ADMSYS(биллинг)', (msg % 'ADMSYS(биллинг)'))
-    duty_informing_from_schedule(1, 'ADMSYS(портал)', (msg % 'ADMSYS(портал)'))
-    duty_informing_from_schedule(1, 'ADMSYS(инфра)', (msg % 'ADMSYS(инфра)'))
+    duty_date = _get_duty_date(datetime.today()) + timedelta(1)
+    duties_list = db().get_duty(duty_date)
+    subscribed_dutymen_list = db().get_all_users_with_subscription('duties')
+    _notify_duties_from_list(users=subscribed_dutymen_list, duties=duties_list, msg=msg)
     # Воскресные дежурные
     msg = 'Ты дежуришь в воскресенье по %s'
-    duty_informing_from_schedule(2, 'ADMSYS(биллинг)', (msg % 'ADMSYS(биллинг)'))
-    duty_informing_from_schedule(2, 'ADMSYS(портал)', (msg % 'ADMSYS(портал)'))
-    duty_informing_from_schedule(2, 'ADMSYS(инфра)', (msg % 'ADMSYS(инфра)'))
+    duty_date = _get_duty_date(datetime.today()) + timedelta(2)
+    duties_list = db().get_duty(duty_date)
+    subscribed_dutymen_list = db().get_all_users_with_subscription('duties')
+    _notify_duties_from_list(users=subscribed_dutymen_list, duties=duties_list, msg=msg)
 
 
 def duty_reminder_tststnd_daily():
