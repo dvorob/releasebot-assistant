@@ -245,22 +245,25 @@ def timetable_reminder():
 
 
 def _notify_duties_from_list(users: list, duties: list, msg: str):
+    logger.info(f'--- NOTIFY DUTIES FROM LIST {users} {duties}')
     for acc in users:
         try:
             db_users = db().get_users('account_name', acc, 'equal')
             if db_users[0]['working_status'] != 'dismissed':
                 for duty in duties:
-                    logger.info(f'--- {duty["account_name"]} {acc}')
-                    if (duty['account_name'] == acc and acc == 'ymvorobevda'):
-                        informer.send_message_to_users(accounts=acc, message=msg, emoji=True)
-                time.sleep(1)
+                    if (duty['account_name'] == acc):
+                        logger.info(f'--- {duty["area"]} {type(duty["area"])}')
+                        message = msg % duty['area']
+                        informer.send_message_to_users(accounts=acc, message=message, emoji=True)
+                        time.sleep(1)
         except Exception as e:
             logger.exception('exception in duty reminder %s', str(e))
 
 
 def duty_reminder_daily_morning():
     msg = 'Крепись, ты сегодня дежуришь по %s. С 10:00, если что.'
-    duty_date = _get_duty_date(datetime.today()) + timedelta(0)
+    # +1 день, т.к. проверка запускается до 10.00 - чтобы не уведомить вчерашних дежурных
+    duty_date = datetime.today() + timedelta(1)
     duties_list = db().get_duty(duty_date)
     subscribed_dutymen_list = db().get_all_users_with_subscription('duties')
     _notify_duties_from_list(users=subscribed_dutymen_list, duties=duties_list, msg=msg)
@@ -268,7 +271,7 @@ def duty_reminder_daily_morning():
 
 def duty_reminder_daily_evening():
     msg = 'Напоминаю, ты <b>завтра</b> дежуришь по %s. Будь готов :)'
-    duty_date = _get_duty_date(datetime.today()) + timedelta(1)
+    duty_date = datetime.today() + timedelta(1)
     duties_list = db().get_duty(duty_date)
     subscribed_dutymen_list = db().get_all_users_with_subscription('duties')
     _notify_duties_from_list(users=subscribed_dutymen_list, duties=duties_list, msg=msg)
@@ -281,13 +284,13 @@ def duty_reminder_weekend():
     logger.info('duty reminder weekend started')
     # Субботние дежурные
     msg = 'Ты дежуришь в субботу по %s'
-    duty_date = _get_duty_date(datetime.today()) + timedelta(1)
+    duty_date = datetime.today() + timedelta(1)
     duties_list = db().get_duty(duty_date)
     subscribed_dutymen_list = db().get_all_users_with_subscription('duties')
     _notify_duties_from_list(users=subscribed_dutymen_list, duties=duties_list, msg=msg)
     # Воскресные дежурные
     msg = 'Ты дежуришь в воскресенье по %s'
-    duty_date = _get_duty_date(datetime.today()) + timedelta(2)
+    duty_date = datetime.today() + timedelta(2)
     duties_list = db().get_duty(duty_date)
     subscribed_dutymen_list = db().get_all_users_with_subscription('duties')
     _notify_duties_from_list(users=subscribed_dutymen_list, duties=duties_list, msg=msg)
@@ -511,10 +514,11 @@ def sync_user_names_from_staff():
         try:
             if ('staff_login' in u and u['staff_login'] != None and u['working_status'] != 'dismissed'):
                 user_req = {}
-                ops = None
+                is_ops = None
                 team_name = None
                 team_key = None
                 department = None
+                is_admin = None
                 staff_login = '' if u['staff_login'] == None else u['staff_login']
                 user_req = requests.get(config.staff_url + '1c82_lk/hs/staff/v1/persons/' + staff_login, 
                                         auth=HttpNtlmAuth(config.ex_user, config.ex_pass), verify=False)
@@ -530,11 +534,13 @@ def sync_user_names_from_staff():
                     if len(user_staff['departments']) > 1:
                         if 'name' in user_staff['departments'][1]:
                             department = user_staff['departments'][1]['name']
-                if department == 'Департамент эксплуатации':
+                if team_name == 'Отдел сопровождения внешних систем':
+                    is_admin = 1
+                if department in ('Департамент эксплуатации', 'Департамент информационной безопасности и противодействия мошенничеству'):
                     team_key = db().get_team_key(team_name)
-                    ops = 1
+                    is_ops = 1
                 db().set_users(account_name=user_staff['loginAD'], full_name=user_staff['firstName'] + ' ' + user_staff['lastName'], first_name=user_staff['firstName'], 
-                               middle_name=user_staff['middleName'], ops=ops, team_name=team_name, department=department, team_key=team_key)
+                               middle_name=user_staff['middleName'], is_ops=is_ops, team_name=team_name, department=department, team_key=team_key, is_admin=is_admin)
                 time.sleep(1)
         except Exception as e:
             logger.exception(f'Error in sync user names from staff {u} {user_req} {str(e)}')
@@ -610,7 +616,7 @@ if __name__ == "__main__":
     warnings.filterwarnings('ignore')
     logger = logging.setup()
     logger.info('- - - START ASSISTANT - - - ')
-    expiring_task_reminder()
+    #sync_user_names_from_staff()
     # unassigned_task_reminder()
     # --- SCHEDULING ---
     # Инициализируем расписание
@@ -620,8 +626,8 @@ if __name__ == "__main__":
     scheduler.add_job(lambda: calculate_statistics(), 'cron', day_of_week='*', hour=19, minute=00)
 
     # Напоминания о дежурствах
-    scheduler.add_job(duty_reminder_daily_morning, 'cron', day_of_week='*',  hour=9, minute=45)
-    scheduler.add_job(duty_reminder_daily_evening, 'cron', day_of_week='mon,tue,wed,thu,sun',  hour=18, minute=30)
+    scheduler.add_job(duty_reminder_daily_morning, 'cron', day_of_week='*', hour=9, minute=45)
+    scheduler.add_job(duty_reminder_daily_evening, 'cron', day_of_week='mon,tue,wed,thu,sun', hour=18, minute=30)
     scheduler.add_job(duty_reminder_weekend, 'cron', day_of_week='fri', hour=14, minute=1)
     scheduler.add_job(duty_reminder_tststnd_daily, 'cron', day_of_week='mon-fri', hour=9, minute=25)
     scheduler.add_job(timetable_reminder, 'cron', day_of_week='*', hour=9, minute=00)
@@ -631,7 +637,7 @@ if __name__ == "__main__":
 
     # Забирает всех пользователей из Стаффа, заливает в БД бота в таблицу Users. Используется для информинга
     scheduler.add_job(sync_users_from_staff, 'cron', day_of_week='*', hour='*', minute=35)
-    scheduler.add_job(sync_user_names_from_staff, 'cron', day_of_week='*', hour=5, minute=10)
+    scheduler.add_job(sync_user_names_from_staff, 'cron', day_of_week='*', hour=3, minute=10)
 
     # Обновить команды, ответственные за компоненты
     scheduler.add_job(update_app_list_by_commands, 'cron', day_of_week='*', hour='*', minute='*/5')
