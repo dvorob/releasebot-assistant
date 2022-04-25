@@ -90,8 +90,8 @@ class Releases_List(BaseModel):
 
 class Teams(BaseModel):
     id = IntegerField(primary_key=True)
-    team_key = CharField
-    team_name = CharField
+    team_key = CharField()
+    team_name = CharField()
 
 class Users(BaseModel):
     id = IntegerField(primary_key=True)
@@ -203,7 +203,7 @@ class PostgresPool:
         # сходить в таблицу Users и найти записи по заданному полю с заданным значением. Вернет массив словарей.
         # например, найти Воробьева можно запросом db_get_users('account_name', 'ymvorobevda')
         # всех админов - запросом db_get_users('is_admin', 1)
-        logger.info('db_get_users param1 param2 %s %s', field, value)
+        logger.info(f'-- db GET USERS {field}, {value} {operation}')
         result = []
         try:
             self.db.connect(reuse_if_open=True)
@@ -248,12 +248,12 @@ class PostgresPool:
             self.db.close()
 
     def set_users(self, account_name, tg_login=None, working_status=None, full_name=None, email=None, staff_login=None, first_name=None, middle_name=None,
-                  ops=None, team_key=None, team_name=None, department=None):
+                  is_ops=None, team_key=None, team_name=None, department=None, is_admin=None):
         # Записать пользователя в таблицу Users. Переберет параметры и запишет только те из них, что заданы. 
         # Иными словами, если вычитали пользователя из AD с полным набором полей, запись будет создана, поля заполнены.
         # Если передадим tg_id для существующего пользователя, заполнится только это поле
         try:
-            logger.debug(f'{account_name}, {tg_login}, {working_status}, {email} {team_key} {team_name} {department}')
+            logger.info(f'{account_name} {tg_login} {working_status} {email} {team_key} {team_name} {department}')
             self.db.connect(reuse_if_open=True)
             db_users, _ = Users.get_or_create(account_name=account_name)
             if tg_login:
@@ -270,8 +270,10 @@ class PostgresPool:
                 db_users.email = email
             if staff_login:
                 db_users.staff_login = staff_login
-            if ops:
-                db_users.ops = ops
+            if is_ops:
+                db_users.is_ops = is_ops
+            if is_admin:
+                db_users.is_admin = is_admin
             if team_key:
                 db_users.team_key = team_key
             if team_name:
@@ -320,6 +322,21 @@ class PostgresPool:
     # ---------------------------------
     # ----- DutyList ------------------
 
+    def get_duty(self, duty_date) -> list:
+        # Сходить в таблицу xerxes.duty_list за дежурными на заданную дату
+        try:
+            self.db.connect(reuse_if_open=True)
+            result = []
+            db_query = Duty_List.select().where(Duty_List.duty_date == duty_date)
+            for v in db_query:
+                result.append((vars(v))['__data__'])
+            logger.info('get duty for %s %s', duty_date, result)
+            return result
+        except Exception as e:
+            logger.exception('exception in db get duty %s', str(e))
+        finally:
+            self.db.close()
+
     def get_duty_in_area(self, duty_date, area) -> list:
         # Сходить в таблицу xerxes.duty_list за дежурными на заданную дату и зону ответственности
         try:
@@ -355,10 +372,7 @@ class PostgresPool:
             self.db.connect(reuse_if_open=True)
             result = []
             logger.info('get duty by account %s %s', duty_date, account_name)
-            db_query = (Duty_List
-                        .select()
-                        .where(Duty_List.duty_date >= duty_date, Duty_List.account_name == account_name)
-                        .order_by(Duty_List.duty_date.asc()))
+            db_query = Duty_List.select().where(Duty_List.duty_date == duty_date)
             for v in db_query:
                 result.append((vars(v))['__data__'])
             logger.info(f'---- YOUR DUTIES {result}')
@@ -578,6 +592,7 @@ class PostgresPool:
         # Сходить в таблицу teams и разрезолвить имя отдела в ключ
         try:
             self.db.connect(reuse_if_open=True)
+            logger.info(f'-- GET TEAM KEY {team_name}')
             db_query = Teams.select().where(Teams.team_name == team_name)
             for v in db_query:
                 res = (vars(v))['__data__']
