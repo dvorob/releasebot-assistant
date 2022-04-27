@@ -263,7 +263,7 @@ def _notify_duties_from_list(users: list, duties: list, msg: str):
 def duty_reminder_daily_morning():
     msg = 'Крепись, ты сегодня дежуришь по %s. С 10:00, если что.'
     # +1 день, т.к. проверка запускается до 10.00 - чтобы не уведомить вчерашних дежурных
-    duty_date = datetime.today() + timedelta(1)
+    duty_date = _get_duty_date(datetime.today()) + timedelta(1)
     duties_list = db().get_duty(duty_date)
     subscribed_dutymen_list = db().get_all_users_with_subscription('duties')
     _notify_duties_from_list(users=subscribed_dutymen_list, duties=duties_list, msg=msg)
@@ -271,7 +271,7 @@ def duty_reminder_daily_morning():
 
 def duty_reminder_daily_evening():
     msg = 'Напоминаю, ты <b>завтра</b> дежуришь по %s. Будь готов :)'
-    duty_date = datetime.today() + timedelta(1)
+    duty_date = _get_duty_date(datetime.today()) + timedelta(1)
     duties_list = db().get_duty(duty_date)
     subscribed_dutymen_list = db().get_all_users_with_subscription('duties')
     _notify_duties_from_list(users=subscribed_dutymen_list, duties=duties_list, msg=msg)
@@ -284,13 +284,13 @@ def duty_reminder_weekend():
     logger.info('duty reminder weekend started')
     # Субботние дежурные
     msg = 'Ты дежуришь в субботу по %s'
-    duty_date = datetime.today() + timedelta(1)
+    duty_date = _get_duty_date(datetime.today()) + timedelta(1)
     duties_list = db().get_duty(duty_date)
     subscribed_dutymen_list = db().get_all_users_with_subscription('duties')
     _notify_duties_from_list(users=subscribed_dutymen_list, duties=duties_list, msg=msg)
     # Воскресные дежурные
     msg = 'Ты дежуришь в воскресенье по %s'
-    duty_date = datetime.today() + timedelta(2)
+    duty_date = _get_duty_date(datetime.today()) + timedelta(2)
     duties_list = db().get_duty(duty_date)
     subscribed_dutymen_list = db().get_all_users_with_subscription('duties')
     _notify_duties_from_list(users=subscribed_dutymen_list, duties=duties_list, msg=msg)
@@ -340,7 +340,7 @@ def sync_duties_from_exchange():
             old_msg, new_msg = ex_duty(cal_start, cal_end)
             msg += old_msg
 
-            logger.info('I find duty for %s : %s', duty_date.strftime("%Y-%m-%d"), msg)
+            logger.debug('I find duty for %s : %s', duty_date.strftime("%Y-%m-%d"), msg)
             # Разобрать сообщение из календаря в формат ["area (зона ответственности)", "имя дежурного", "аккаунт деужурного"]
             for msg in new_msg:
                 msg = re.sub(r'—', '-', msg)
