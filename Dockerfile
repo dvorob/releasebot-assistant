@@ -1,4 +1,4 @@
-FROM docker.nexus.yamoney.ru/yamoney/ubuntu-20-04-ym:1.0.3
+FROM docker.nexus.yooteam.ru/yamoney/ubuntu-20-04-ym:1.0.3
 
 WORKDIR /opt
 
@@ -15,7 +15,7 @@ RUN apt-get update -y && apt-get -fy install ca-certificates gcc libffi-dev open
 
 # Layer to install pip packages
 RUN mkdir -p /root/.pip && \
-    pip3 install --no-cache-dir --trusted-host nexus.yamoney.ru -i https://nexus.yamoney.ru/repository/pypi-proxy-pypi.org/simple --upgrade \
+    pip3 install --no-cache-dir --trusted-host nexus.yooteam.ru -i https://nexus.yooteam.ru/repository/pypi-proxy-pypi.org/simple --upgrade \
     -r requirements.txt && rm /etc/localtime /etc/apt/sources.list && ln -s /usr/share/zoneinfo/Europe/Moscow /etc/localtime
 
 ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt

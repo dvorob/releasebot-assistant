@@ -8,7 +8,7 @@ from utils import logging
 class ServiceDiscoveryAppRemotesTable:
 
     def __init__(self, wiki_username: str, wiki_password: str):
-        self.consul_servers = {'prod': 'consul.yamoney.ru', 'pcidss': 'consul-pcidss.yooteam.ru'}
+        self.consul_servers = {'prod': 'consul.yooteam.ru', 'pcidss': 'consul-pcidss.yooteam.ru'}
         self.session = requests.Session()
         self.session.auth = (wiki_username, wiki_password)
         self.wiki_page_url = 'https://wiki.yooteam.ru/rest/api/content/286591430'
