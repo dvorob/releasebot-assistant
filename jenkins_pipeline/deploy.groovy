@@ -1,7 +1,7 @@
 node('docker') {
     ansiColor('xterm') {
         cleanWs()
-        def dockerImageUrl = "docker.nexus.yamoney.ru/yamoney/ubuntu-18-04-ym-cloud"
+        def dockerImageUrl = "docker.nexus.yooteam.ru/yamoney/ubuntu-18-04-ym-cloud"
         def registry = 'docker-ym.nexus.yooteam.ru'
         def image = 'releasebot-assistant'
         def home_dir = '/var/lib/jenkins/workspace/Common/releasebot/assistant'
@@ -20,7 +20,7 @@ node('docker') {
                         branches: [[name: branchName]],
                         extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: '']],
                         userRemoteConfigs: [[credentialsId: credentials.bitbucket,
-                        url: 'ssh://git@bitbucket.yamoney.ru/admin-tools/releasebot-assistant.git']]])
+                        url: 'ssh://git@bitbucket.yooteam.ru/admin-tools/releasebot-assistant.git']]])
 
                     echo 'Build & push docker image'
                     def commit_id = sh(script:"git rev-parse --short HEAD", returnStdout: true).trim()
@@ -36,7 +36,7 @@ node('docker') {
                 stage('get secret from vault') {
                     // set credential for get secret from Vault
                     withCredentials([usernamePassword(credentialsId: credentials.vault, usernameVariable: 'JenkinsUser', passwordVariable: 'JenkinsPassword')]) {
-                        env.VAULT_ADDR = 'https://vault.yamoney.ru'
+                        env.VAULT_ADDR = 'https://vault.yooteam.ru'
                         env.VAULT_AUTHTYPE = 'ldap'
                         env.VAULT_USER = "${JenkinsUser}"
                         env.VAULT_PASSWORD = "${JenkinsPassword}"
