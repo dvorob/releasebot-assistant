@@ -254,14 +254,14 @@ def _notify_duties_from_list(users: list, duties: list, msg: str):
                     if (duty['account_name'] == acc):
                         logger.info(f'--- {duty["area"]} {type(duty["area"])}')
                         message = msg % duty['area']
-                        informer.send_message_to_users(accounts=acc, message=message, emoji=True)
+                        informer.send_message_to_users(accounts=acc, message=message, emoji=True, polite=True)
                         time.sleep(1)
         except Exception as e:
             logger.exception('exception in duty reminder %s', str(e))
 
 
 def duty_reminder_daily_morning():
-    msg = 'Крепись, ты сегодня дежуришь по %s. С 10:00, если что.'
+    msg = 'спешу сообщить, что вы сегодня дежурите по %s с 10:00. Хошего вам дня.'
     # +1 день, т.к. проверка запускается до 10.00 - чтобы не уведомить вчерашних дежурных
     duty_date = _get_duty_date(datetime.today()) + timedelta(1)
     duties_list = db().get_duty(duty_date)
@@ -270,7 +270,7 @@ def duty_reminder_daily_morning():
 
 
 def duty_reminder_daily_evening():
-    msg = 'Напоминаю, ты <b>завтра</b> дежуришь по %s. Будь готов :)'
+    msg = 'спешу сообщить, что вы <b>завтра</b> дежурите по %s'
     duty_date = _get_duty_date(datetime.today()) + timedelta(1)
     duties_list = db().get_duty(duty_date)
     subscribed_dutymen_list = db().get_all_users_with_subscription('duties')
@@ -283,13 +283,13 @@ def duty_reminder_weekend():
     """
     logger.info('duty reminder weekend started')
     # Субботние дежурные
-    msg = 'Ты дежуришь в субботу по %s'
+    msg = 'смею напомнить, что вы дежурите в субботу по %s'
     duty_date = _get_duty_date(datetime.today()) + timedelta(1)
     duties_list = db().get_duty(duty_date)
     subscribed_dutymen_list = db().get_all_users_with_subscription('duties')
     _notify_duties_from_list(users=subscribed_dutymen_list, duties=duties_list, msg=msg)
     # Воскресные дежурные
-    msg = 'Ты дежуришь в воскресенье по %s'
+    msg = 'смею напомнить, что вы дежурите в воскресенье по %s'
     duty_date = _get_duty_date(datetime.today()) + timedelta(2)
     duties_list = db().get_duty(duty_date)
     subscribed_dutymen_list = db().get_all_users_with_subscription('duties')

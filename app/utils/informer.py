@@ -28,7 +28,7 @@ def inform_duty(areas: list, message: str):
         logger.exception('Exception in inform duty %s', str(e))
 
 
-def send_message_to_users(accounts: list, message: str, disable_notification: bool = True, emoji: bool = False):
+def send_message_to_users(accounts: list, message: str, disable_notification: bool = True, emoji: bool = False, polite: bool = False):
     """
         (accounts=['ymvorobevda', ...], message="Hi!", disable_notification=True)
         Отправить сообщение в Informer в формате {'accounts': ['ymvorobevda'], 'text': 'Работает!', disable_notification=True}
@@ -36,7 +36,7 @@ def send_message_to_users(accounts: list, message: str, disable_notification: bo
     """
     logger.info('-- SEND MESSAGE TO USER %s %s', accounts, message)
     try:
-        data = {'accounts': accounts, 'text': message, 'emoji': emoji}
+        data = {'accounts': accounts, 'text': message, 'emoji': emoji, 'polite': polite}
         resp = requests.post(config.informer_send_message_url, data=json.dumps(data))
         logger.info('Sent message to %s %s response=%s', accounts, message, resp)
     except Exception as e:
