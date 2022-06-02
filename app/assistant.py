@@ -540,7 +540,8 @@ def sync_user_names_from_staff():
                     team_key = db().get_team_key(team_name)
                     is_ops = 1
                 db().set_users(account_name=user_staff['loginAD'], full_name=user_staff['firstName'] + ' ' + user_staff['lastName'], first_name=user_staff['firstName'], 
-                               middle_name=user_staff['middleName'], is_ops=is_ops, team_name=team_name, department=department, team_key=team_key, is_admin=is_admin)
+                               middle_name=user_staff['middleName'], is_ops=is_ops, team_name=team_name, department=department, team_key=team_key, is_admin=is_admin,
+                               gender=user_staff['gender'])
                 time.sleep(1)
         except Exception as e:
             logger.exception(f'Error in sync user names from staff {u} {user_req} {str(e)}')
@@ -616,7 +617,7 @@ if __name__ == "__main__":
     warnings.filterwarnings('ignore')
     logger = logging.setup()
     logger.info('- - - START ASSISTANT - - - ')
-    #sync_user_names_from_staff()
+    sync_user_names_from_staff()
     # unassigned_task_reminder()
     # --- SCHEDULING ---
     # Инициализируем расписание
