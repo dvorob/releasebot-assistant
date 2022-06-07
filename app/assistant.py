@@ -261,7 +261,7 @@ def _notify_duties_from_list(users: list, duties: list, msg: str):
 
 
 def duty_reminder_daily_morning():
-    msg = 'спешу сообщить, что вы сегодня дежурите по %s с 10:00. Хошего вам дня.'
+    msg = 'спешу сообщить, что вы сегодня дежурите по %s с 10:00. Хорошего дня!'
     # +1 день, т.к. проверка запускается до 10.00 - чтобы не уведомить вчерашних дежурных
     duty_date = _get_duty_date(datetime.today()) + timedelta(1)
     duties_list = db().get_duty(duty_date)
