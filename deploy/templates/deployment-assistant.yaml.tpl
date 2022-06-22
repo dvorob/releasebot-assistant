@@ -18,6 +18,7 @@ spec:
         app: {{ $conf.name }}
         app_type: {{ $conf.app_type }}
         app_name: {{ $conf.app_name }}
+        log_enabled: {{ $conf.log_enabled | quote }}
         kafka_log_topic: {{ $conf.kafka_log_topic }}
     spec:
       containers:

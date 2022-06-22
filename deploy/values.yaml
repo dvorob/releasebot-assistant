@@ -4,11 +4,12 @@
 releasebot:
   name: 'releasebot-assistant'
   app_type: 'python'
-  app_name: 'releasebot'
+  app_name: 'assistant'
   kafka_log_topic: 'yamoney_python_ymreleasebot'
   count_replicas: 1
   image: 'docker-ym.nexus.yooteam.ru/yamoney/releasebot-assistant'
   tag: 'latest'
+  log_enabled: true
   mysql:
     name: mysql
     port:
