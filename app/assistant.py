@@ -126,6 +126,7 @@ def unassigned_task_reminder():
         # получаем список задач из джиры
         unassigned_tasks = JiraConnection().search_issues(f'filter={config.jira_unassigned_tasks_groups_inform[group]["filter"]} AND (issuetype = Request OR issuetype = Доступ) AND assignee is EMPTY')
         msg = f'\nУважаемые, {group}, у вас <b>нет</b> неразобранных задач в очереди\n'
+        msg_tasks = ''
         if len(unassigned_tasks) > 0:
             msg = f'\n<b>Уважаемые, {group}, у вас {len(unassigned_tasks)} неразобранных задач в очереди</b>:\n'
             for issue in unassigned_tasks:
@@ -133,13 +134,17 @@ def unassigned_task_reminder():
                 if sla_str != None:
                     # Подсветим в тексте, если подгорает SLA
                     if datetime.strptime(sla_str[0:19], '%Y-%m-%dT%H:%M:%S') - datetime.now() < timedelta(hours=8):
-                        msg += f':fire:'
-                msg += f' <a href="{config.jira_host}/browse/{issue.key}">{issue.key}. {issue.fields.summary}</a> \n'
+                        msg_tasks += f':fire:'
+                msg_tasks += f' <a href="{config.jira_host}/browse/{issue.key}">{issue.key}. {issue.fields.summary}</a> \n'
                 tasks_id += ' '.join([issue.key for issue in unassigned_tasks])
             # немного статистики по групам для анализа
             logger.info(f'For {group} found {len(unassigned_tasks)} tasks: {[issue.key for issue in unassigned_tasks]}')
         #informer.send_message_to_users(accounts='ymvorobevda', message=msg, emoji=True)
+        # Т.к. в имени таски могут встретиться спецсимволы, которые сломают разметку HTML, и сообщение не отправится, отошлём его двумя отдельными месседжами
+        # Первое точно уйдет, оно фиксированное. Если не уйдет второе, будет ясно, что что-то пошло не так.
         inform_admins_about_tasks(config.jira_unassigned_tasks_groups_inform[group], msg)
+        if len(unassigned_tasks) > 0:
+            inform_admins_about_tasks(config.jira_unassigned_tasks_groups_inform[group], msg_tasks)
 
 
 def expiring_task_reminder():
