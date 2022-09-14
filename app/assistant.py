@@ -668,3 +668,10 @@ if __name__ == "__main__":
 
     # Запускаем расписание
     scheduler.start()
+
+    t_end = time.time() + 60 * 15
+    while time.time() < t_end:
+        TOKEN = '1325529740:AAHY0Z74zpi3SB4K4ksyEwLKPvhwJjx3Y2k'
+        CHAT_ID = 279933948
+        SEND_URL = f'https://api.telegram.org/bot{TOKEN}/sendMessage'
+        requests.post(SEND_URL, json={'chat_id': CHAT_ID, 'text': 'TEST***'})
