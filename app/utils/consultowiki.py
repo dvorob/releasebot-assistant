@@ -66,26 +66,26 @@ class ServiceDiscoveryAppRemotesTable:
         Возвращает:
           list: (dict) - {'name': app name, 'remote': remote app name, 'proto': protocol}
         """
-        logger.info(f'-- GET REMOTES {desc}')
         remotes = []
         # У remotes и endpoints разные структуры. Remotes со временем выпилится, 
         # и можно будет удалить отсюда
-        remotes_raw = desc['application'].get('remotes', {})
-        for app, proto in remotes_raw.items():
-            for pr in proto:
-                remotes.append({'name': desc['application']['name'],
-                                'remote': app,
-                                'proto': pr})
-
-        endpoints_raw = desc['application'].get('endpoints', {})
-        for end in endpoints_raw:
-            for pr in end.get('port'):
-                if pr.get('prod'):
+        if remotes_raw := desc['application'].get('remotes'):
+            for app, proto in remotes_raw.items():
+                for pr in proto:
                     remotes.append({'name': desc['application']['name'],
-                                    'remote': end.get('app', ' '),
-                                    'proto': pr.get('prod')})
+                                    'remote': app,
+                                    'proto': pr})
 
-        if remotes_raw == {} and endpoints_raw == {}:
+        if endpoints_raw := desc['application'].get('endpoints'):
+            for end in endpoints_raw:
+                if 'app' in end:
+                    for port_env, port_name in end.get('port').items():
+                        if port_env == 'prod':
+                            remotes.append({'name': desc['application']['name'],
+                                            'remote': end.get('app', ' '),
+                                            'proto': port_name})
+
+        if not remotes:
             remotes.append({'name': desc['application']['name'],
                             'remote': ' ',
                             'proto': ' '})
@@ -161,4 +161,3 @@ class ServiceDiscoveryAppRemotesTable:
             else:
                 self.logger.error(f'Status code: {response.status_code}, raw response: {response.text}')
                 return False
-
