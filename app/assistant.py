@@ -598,8 +598,8 @@ def sync_users_from_ad():
 
 def update_service_discovery_remotes_wiki():
     """
-    Читает из consul desc.yml всех зарегистрированных приложений, формирует из списка приложений и remotes
-    html таблицу и отправляет её на wiki
+    Читает из consul desc.yml всех зарегистрированных приложений, формирует из списка приложений 
+    и remotes + endpoints html таблицу и отправляет её на wiki
     """
     logger.info('-- UPDATE SERVICE DISCOVERY REMOTES WIKI has started')
     consul_to_wiki = ServiceDiscoveryAppRemotesTable(config.jira_user, config.jira_pass)
@@ -622,7 +622,7 @@ if __name__ == "__main__":
     warnings.filterwarnings('ignore')
     logger = logging.setup()
     logger.info('- - - START ASSISTANT - - - ')
-    sync_user_names_from_staff()
+    update_service_discovery_remotes_wiki()
     # unassigned_task_reminder()
     # --- SCHEDULING ---
     # Инициализируем расписание

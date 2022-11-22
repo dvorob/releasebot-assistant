@@ -66,15 +66,26 @@ class ServiceDiscoveryAppRemotesTable:
         Возвращает:
           list: (dict) - {'name': app name, 'remote': remote app name, 'proto': protocol}
         """
+        logger.info(f'-- GET REMOTES {desc}')
         remotes = []
+        # У remotes и endpoints разные структуры. Remotes со временем выпилится, 
+        # и можно будет удалить отсюда
         remotes_raw = desc['application'].get('remotes', {})
-
         for app, proto in remotes_raw.items():
             for pr in proto:
                 remotes.append({'name': desc['application']['name'],
                                 'remote': app,
                                 'proto': pr})
-        if remotes_raw == {}:
+
+        endpoints_raw = desc['application'].get('endpoints', {})
+        for end in endpoints_raw:
+            for pr in end.get('port'):
+                if pr.get('prod'):
+                    remotes.append({'name': desc['application']['name'],
+                                    'remote': end.get('app', ' '),
+                                    'proto': pr.get('prod')})
+
+        if remotes_raw == {} and endpoints_raw == {}:
             remotes.append({'name': desc['application']['name'],
                             'remote': ' ',
                             'proto': ' '})
