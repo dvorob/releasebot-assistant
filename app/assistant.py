@@ -378,7 +378,7 @@ def ex_connect():
         # Отключаем верификацию SLL сертификатов Exchange
         BaseProtocol.HTTP_ADAPTER_CLS = NoVerifyHTTPAdapter
 
-        ex_cred = Credentials(config.ex_user, config.ex_pass)
+        ex_cred = Credentials(config.ex_user.replace('yamoney', 'yooteam'), config.ex_pass)
         ex_cfg = Configuration(server=config.ex_host, credentials=ex_cred)
         ex_acc = Account(primary_smtp_address=config.ex_cal, config=ex_cfg,
                          access_type=DELEGATE, autodiscover=False)
@@ -622,7 +622,7 @@ if __name__ == "__main__":
     warnings.filterwarnings('ignore')
     logger = logging.setup()
     logger.info('- - - START ASSISTANT - - - ')
-    update_service_discovery_remotes_wiki()
+    sync_duties_from_exchange()
     # unassigned_task_reminder()
     # --- SCHEDULING ---
     # Инициализируем расписание
