@@ -452,32 +452,39 @@ def sync_calendar_daily():
     """
     logger.info('-- SYNC CALENDAR DAILY')
     # Вернёт массив по кол-ву дней в году
-    soup = BeautifulSoup(get_calendar_from_1c(), 'lxml')
-    today = datetime.today()
-    today_for_calendar = today.strftime("%Y-%m-%d")
-    # Возьмем номер текущего дня с начала года
-    today_day_number = datetime.now().timetuple().tm_yday-1
-    # Переберём дни текущего и на 14 вперед, чтобы иметь запас на случай недоступности 1С или проблем интеграции
-    for day_number in range (today_day_number, today_day_number + 14):
-        logger.debug('Today is %s', soup('workingcalendarday')[day_number]['typeofday'])
-        if soup('workingcalendarday')[day_number]['typeofday'] in {'Рабочий', 'Предпраздничный'}:
-            # Если сегодня рабочий день, положим в item work_day_or_not 1, set=remaster
-            db().set_workday(soup('workingcalendarday')[day_number]['date'], 1)
-        else:
-            db().set_workday(soup('workingcalendarday')[day_number]['date'], 0)
-            logger.debug('Isn\'t working day %s', soup('workingcalendarday')[day_number])
+    try:
+        soup = BeautifulSoup(get_calendar_from_lk(), 'lxml')
+        today = datetime.today()
+        today_for_calendar = today.strftime("%Y-%m-%d")
+        # Возьмем номер текущего дня с начала года
+        today_day_number = datetime.now().timetuple().tm_yday-1
+        # Переберём дни текущего и на 14 вперед, чтобы иметь запас на случай недоступности 1С или проблем интеграции
+        for day_number in range (today_day_number, today_day_number + 14):
+            logger.debug('Today is %s', soup('workingcalendarday')[day_number]['typeofday'])
+            if soup('workingcalendarday')[day_number]['typeofday'] in {'Рабочий', 'Предпраздничный'}:
+                # Если сегодня рабочий день, положим в item work_day_or_not 1, set=remaster
+                db().set_workday(soup('workingcalendarday')[day_number]['date'], 1)
+            else:
+                db().set_workday(soup('workingcalendarday')[day_number]['date'], 0)
+                logger.debug('Isn\'t working day %s', soup('workingcalendarday')[day_number])
+    except Exception as e:
+        logger.exception(f'Erro in sync calendar daily {str(e)}')
 
 
-def get_calendar_from_1c() -> str:
+def get_calendar_from_lk() -> str:
     """
         Запрос в API 1C за календарем
     """
     logger.info('-- GET CALENDAR FROM 1C')
     try:
         cur_year = datetime.now().year
-        req = requests.get(f"{config.oneass_calendar_api}?year={cur_year}")
-        logger.debug('GET CALENDAR FROM 1C: %s', req.text)
-        return req.text
+        tt_api_uri = config.lk_api_calendar + f"?year={cur_year}"
+        tt_api_response = requests.get(
+            tt_api_uri,
+            auth=HttpNtlmAuth(config.jira_user, config.jira_pass),
+            verify=False)
+        logger.debug('GET CALENDAR FROM 1C: %s', tt_api_response.text)
+        return tt_api_response.text
     except Exception as e:
         logger.exception('Error in GET CALENDAR FROM 1C %s', e)
 
@@ -622,7 +629,7 @@ if __name__ == "__main__":
     warnings.filterwarnings('ignore')
     logger = logging.setup()
     logger.info('- - - START ASSISTANT - - - ')
-    sync_duties_from_exchange()
+    sync_calendar_daily()
     # unassigned_task_reminder()
     # --- SCHEDULING ---
     # Инициализируем расписание
