@@ -93,7 +93,8 @@ base_dn = 'OU=Сотрудники Компании,DC=yamoney,DC=ru'
 ldap_filter = '(&(objectCategory=person)(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))'
 ldap_attrs = ['cn','sAMAccountName','distinguishedName','extensionattribute4','memberOf','mail']
 
-oneass_calendar_api = 'http://fin3.yamoney.ru:8080/sais/bp/calendar/getCalendar'
+lk_host = 'https://lk.yooteam.ru'
+lk_api_calendar = f'{lk_host}/1c82_lk/hs/Obmen/v1/getCalendar'
 
 jira_unassigned_tasks_groups_inform = {
     'Admsys Bay': {
