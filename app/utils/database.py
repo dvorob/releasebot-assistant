@@ -32,6 +32,7 @@ class App_List(BaseModel):
     dev_team = CharField(default=None)
     jira_com = CharField(default=None)
     locked_by = CharField(default=None)
+    repo_project = CharField(default=None)
 
 class Chats(BaseModel):
     id = IntegerField()
@@ -160,14 +161,15 @@ class PostgresPool:
         finally:
             self.db.close()
 
-    def set_application_dev_team(self, app_name, value) -> list:
+    def set_application_params(self, app_name, dev_team, repo_project) -> list:
         # Выставить значение в конкретном поле dev_team
         # ('shiro', 'dev_team', 'PORTAL')
         try:
+            logger.info(f'Set application params {app_name} {dev_team} {repo_project}')
             self.db.connect(reuse_if_open=True)
             result = (App_List
-                     .update(dev_team = value)
-                     .where(App_List.app_name == app_name))
+                     .update(dev_team = dev_team, repo_project = repo_project)
+                     .where(App_List.app_name == fn.Lower(app_name)))
             result.execute()
         except Exception as e:
             logger.exception('exception in set application dev team %s', e)

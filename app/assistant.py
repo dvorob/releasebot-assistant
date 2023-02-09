@@ -427,7 +427,7 @@ def app_version(full_name_app):
         logger.warning('This task %s does not fit the required format' % full_name_app)
 
 
-def update_app_list_by_commands():
+def update_app_list_from_jira():
     """
     Запускается по расписанию, выгребает из Jira названия компонент и ответственные команды (из справочника COM)
     Обновляет команды в таблице app_list в БД бота.
@@ -436,7 +436,8 @@ def update_app_list_by_commands():
     try:
         components = jira_get_components()
         for c in components:
-            db().set_application_dev_team(c['app_name'], c['dev_team'])
+            logger.info(c)
+            db().set_application_params(c['app_name'], c['dev_team'], c['repo_project'])
     except Exception as e:
         logger.exception('Error in update app list %s', str(e))
 
@@ -629,15 +630,13 @@ if __name__ == "__main__":
     warnings.filterwarnings('ignore')
     logger = logging.setup()
     logger.info('- - - START ASSISTANT - - - ')
-    sync_calendar_daily()
-    # unassigned_task_reminder()
     # --- SCHEDULING ---
     # Инициализируем расписание
     scheduler = BlockingScheduler(timezone='Europe/Moscow')
 
     # Сбор статистики
     scheduler.add_job(lambda: calculate_statistics(), 'cron', day_of_week='*', hour=19, minute=00)
-
+    update_app_list_from_jira()
     # Напоминания о дежурствах
     scheduler.add_job(duty_reminder_daily_morning, 'cron', day_of_week='*', hour=9, minute=45)
     scheduler.add_job(duty_reminder_daily_evening, 'cron', day_of_week='mon,tue,wed,thu,sun', hour=18, minute=30)
@@ -653,7 +652,7 @@ if __name__ == "__main__":
     scheduler.add_job(sync_user_names_from_staff, 'cron', day_of_week='*', hour=3, minute=10)
 
     # Обновить команды, ответственные за компоненты
-    scheduler.add_job(update_app_list_by_commands, 'cron', day_of_week='*', hour='*', minute='*/5')
+    scheduler.add_job(update_app_list_from_jira, 'cron', day_of_week='*', hour='*', minute='*/5')
 
     # Поскольку в 10:00 в календаре присутствует двое дежурных - за вчера и за сегодня, процедура запускается в 5, 25 и 45 минут, чтобы не натыкаться на дубли и не вычищать их
     scheduler.add_job(sync_duties_from_exchange, 'cron', day_of_week='*', hour='*', minute='5-59/10')

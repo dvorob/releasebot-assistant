@@ -111,12 +111,18 @@ def jira_get_components() -> list:
     # Отберём компоненты по фильтру
     # Имя компоненты возьмем из поля RepoSlug (19193), уберём префиксы, если они есть
     # Команда - в поле 16890.
-    for issue in issues:
-        if issue.fields.customfield_19193 != None:
-            app_name = (issue.fields.customfield_19193).replace('yamoney-backend-', '').replace('yamoney-frontend-', '')
-        else:
-            app_name = issue.fields.summary
-        if issue.fields.customfield_16890 != None:
-            dev_team = issue.fields.customfield_16890.key
-        components.append({'app_name': app_name, 'dev_team': dev_team})
-    return components
+    try:
+        for issue in issues:
+            if issue.fields.customfield_19193 != None:
+                app_name = (issue.fields.customfield_19193).replace('yamoney-backend-', '').replace('yamoney-frontend-', '')
+            else:
+                app_name = issue.fields.summary
+            if issue.fields.customfield_16890 != None:
+                dev_team = issue.fields.customfield_16890.key
+            if issue.fields.customfield_19192 != None:
+                repo_project = issue.fields.customfield_19192.value
+            components.append({'app_name': app_name, 'dev_team': dev_team, 'repo_project': repo_project})
+        return components
+    except Exception as e:
+        logger.exception(f'Error in jira get components {str(e)}')
+        

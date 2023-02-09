@@ -55,7 +55,9 @@ jira_filter_wip = 'project in (ADMSYS, DEPLOY) AND ' \
                   'status not in (Closed, Resolved, "Waiting release") ' \
                   'ORDER BY priority DESC, updatedDate ASC'
 
-jira_filter_components = 'project = COM AND "Target Project" in (BACKEND, BACKEND-API, FRONTEND, YCAPI, BI, ATLASS)'
+jira_filter_components = 'project = COM AND "Target Project" in ' \
+                         '(BACKEND, BACKEND-API, FRONTEND, YCAPI, BI, ATLASS, BITBUCKET-PLUGINS, CC, OFFER, OUT, CORE, ' \
+                         'MI, MA, MARKETING, INFRA-SERVICES, BITBUCKET, CMS, PRODUCT-SPECS, EXTCONF)'
 
 class JiraFilters(Enum):
     UNASSIGNED_ADMSYS_GALEON = '37402'
