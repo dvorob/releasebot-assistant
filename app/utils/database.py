@@ -250,8 +250,9 @@ class PostgresPool:
         finally:
             self.db.close()
 
-    def set_users(self, account_name, tg_login=None, working_status=None, full_name=None, email=None, staff_login=None, first_name=None, middle_name=None,
-                  is_ops=None, team_key=None, team_name=None, department=None, is_admin=None, gender=None):
+    def set_users(self, account_name, tg_login=None, working_status=None, full_name=None, email=None, 
+                  staff_login=None, first_name=None, middle_name=None, is_ops=None, team_key=None, 
+                  team_name=None, department=None, is_admin=None, gender=None, save_permanent=False):
         # Записать пользователя в таблицу Users. Переберет параметры и запишет только те из них, что заданы. 
         # Иными словами, если вычитали пользователя из AD с полным набором полей, запись будет создана, поля заполнены.
         # Если передадим tg_id для существующего пользователя, заполнится только это поле
@@ -262,7 +263,8 @@ class PostgresPool:
             if tg_login:
                 db_users.tg_login = tg_login
             if working_status:
-                db_users.working_status = working_status
+                if not save_permanent and not db_users.working_status == 'permanent':
+                    db_users.working_status = working_status
             if full_name:
                 db_users.full_name = full_name.replace('ё', 'е')
             if first_name:

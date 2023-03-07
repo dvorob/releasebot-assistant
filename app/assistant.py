@@ -598,7 +598,8 @@ def sync_users_from_ad():
     try:
         for k, v in users_dict.items():
             logger.debug('Sync users from ad users_dict %s', v)
-            db().set_users(v['account_name'], v['full_name'], v['tg_login'], v['working_status'], v['email'])
+            db().set_users(account_name=v['account_name'], full_name=v['full_name'], tg_login=v['tg_login'], 
+                           working_status=v['working_status'], email=v['email'], save_permanent=True)
         logger.info('DB: Users saving is completed')
     except Exception as e:
         logger.exception('exception in sync users from ad %s', str(e))
