@@ -328,7 +328,8 @@ def sync_duties_from_exchange():
     """
     try:
         logger.info('-- SYNC DUTIES FROM EXCHANGE')
-        duty_areas = ['ADMSYS', 'NOC', 'ADMWIN', 'IPTEL', 'ADMMSSQL', 'PROCESS', 'DEVOPS', 'TECH', 'INFOSEC', 'ora', 'pg', 'ORACLE', 'POSTGRES']
+        duty_areas = ['ADMSYS', 'NOC', 'ADMWIN', 'IPTEL', 'ADMMSSQL', 'PROCESS', 'DEVOPS', 
+                      'TECH', 'INFOSEC', 'ora', 'pg', 'ORACLE', 'POSTGRES']
 
         # Go to Exchange calendar and get duites for 30 next days
         for i in range(0, 30):
@@ -349,7 +350,8 @@ def sync_duties_from_exchange():
             # Разобрать сообщение из календаря в формат ["area (зона ответственности)", "имя дежурного", "аккаунт деужурного"]
             for msg in new_msg:
                 msg = re.sub(r'—', '-', msg)
-                dl = {'duty_date': duty_date, 'full_text': msg, 'area' : '', 'full_name': '', 'account_name': '', 'tg_login': ''}
+                dl = {'duty_date': duty_date, 'full_text': msg, 'area' : '', 
+                      'full_name': '', 'account_name': '', 'tg_login': '', 'staff_login': ''}
                 for area in duty_areas:
                     if len(re.findall(area+".*-", msg)) > 0:
                         dl["area"] = re.sub(r' |-', '', (re.findall(area+'.*-', msg))[0])
@@ -362,6 +364,7 @@ def sync_duties_from_exchange():
                                 if len(search_duty_name) == 1:
                                     dl["account_name"] = search_duty_name[0]["account_name"]
                                     dl["tg_login"] = search_duty_name[0]["tg_login"]
+                                    dl["staff_login"] = search_duty_name[0]["staff_login"]
                 logger.debug('Duty result %s',dl)
                 db().set_dutylist(dl)
 
@@ -637,7 +640,7 @@ if __name__ == "__main__":
 
     # Сбор статистики
     scheduler.add_job(lambda: calculate_statistics(), 'cron', day_of_week='*', hour=19, minute=00)
-    update_app_list_from_jira()
+    sync_duties_from_exchange()
     # Напоминания о дежурствах
     scheduler.add_job(duty_reminder_daily_morning, 'cron', day_of_week='*', hour=9, minute=45)
     scheduler.add_job(duty_reminder_daily_evening, 'cron', day_of_week='mon,tue,wed,thu,sun', hour=18, minute=30)
