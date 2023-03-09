@@ -368,6 +368,7 @@ class PostgresPool:
             db_duty.account_name = dl['account_name']
             db_duty.full_text = dl['full_text']
             db_duty.tg_login = dl['tg_login']
+            db_duty.staff_login = dl['staff_login']
             db_duty.save()
         except Exception as e:
             logger.exception('error in set dutylist %s', str(e))
