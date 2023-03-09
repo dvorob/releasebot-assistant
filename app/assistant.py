@@ -326,22 +326,21 @@ def sync_duties_from_exchange():
         Все остальные методы ходят за инфой о дежурных в БД.
         Вызывается по cron-у, следовательно изменения в календаре отразятся в боте
     """
-    try:
-        logger.info('-- SYNC DUTIES FROM EXCHANGE')
-        duty_areas = ['ADMSYS', 'NOC', 'ADMWIN', 'IPTEL', 'ADMMSSQL', 'PROCESS', 'DEVOPS', 
-                      'TECH', 'INFOSEC', 'ora', 'pg', 'ORACLE', 'POSTGRES']
+    logger.info('-- SYNC DUTIES FROM EXCHANGE')
+    duty_areas = ['ADMSYS', 'NOC', 'ADMWIN', 'IPTEL', 'ADMMSSQL', 'PROCESS', 'DEVOPS', 
+                    'TECH', 'INFOSEC', 'ora', 'pg', 'ORACLE', 'POSTGRES']
 
         # Go to Exchange calendar and get duites for 30 next days
-        for i in range(0, 30):
-            msg = 'Дежурят сейчас:\n'
-            # Вычисляем правильный день для дежурств, с учетом наших 10-часовых особенностей
-            if int(datetime.today().strftime("%H")) < int(10):
-                duty_date = datetime.today() + timedelta(i) - timedelta(1)
-            else:
-                duty_date = datetime.today() + timedelta(i)
-            cal_start = UTC_NOW() + timedelta(i)
-            cal_end = UTC_NOW() + timedelta(i)
-
+    for i in range(0, 30):
+        msg = 'Дежурят сейчас:\n'
+        # Вычисляем правильный день для дежурств, с учетом наших 10-часовых особенностей
+        if int(datetime.today().strftime("%H")) < int(10):
+            duty_date = datetime.today() + timedelta(i) - timedelta(1)
+        else:
+            duty_date = datetime.today() + timedelta(i)
+        cal_start = UTC_NOW() + timedelta(i)
+        cal_end = UTC_NOW() + timedelta(i)
+        try:
             # go to exchange for knowledge
             old_msg, new_msg = ex_duty(cal_start, cal_end)
             msg += old_msg
@@ -359,17 +358,25 @@ def sync_duties_from_exchange():
                     if "area" in dl:
                         if len(re.findall(area+'.*-', msg)) > 0:
                             dl["full_name"] = re.sub(r'^ | +$ | ', '', msg[re.search(area+".*-", msg).end():])
-                            search_duty_name = db().get_user_by_fullname(dl["full_name"])
-                            if search_duty_name:
-                                if len(search_duty_name) == 1:
-                                    dl["account_name"] = search_duty_name[0]["account_name"]
-                                    dl["tg_login"] = search_duty_name[0]["tg_login"]
-                                    dl["staff_login"] = search_duty_name[0]["staff_login"]
+                            users_array = db().get_user_by_fullname(dl["full_name"])
+                            #logger.info(f'-- FULL NAME {users_array}')
+                            # Если у юзера команда в БД бота == команде в календаре Exchange, это искомый человек
+                            # Иначе возьмем первого попавшегося. Но есть риск для полных тёзок
+                            if users_array:
+                                for u in users_array:
+                                    if u["team_key"] and u["team_key"] in dl["area"]:
+                                        dl["account_name"] = u["account_name"]
+                                        dl["tg_login"] = u["tg_login"]
+                                        dl["staff_login"] = u["staff_login"]
+                                if dl["account_name"] == '':
+                                    dl["account_name"] = users_array[0]["account_name"]
+                                    dl["tg_login"] = users_array[0]["tg_login"]
+                                    dl["staff_login"] = users_array[0]["staff_login"]
                 logger.debug('Duty result %s',dl)
                 db().set_dutylist(dl)
 
-    except Exception as e:
-        logger.exception('exception in sync duties from exchange %s', str(e))
+        except Exception as e:
+            logger.exception('exception in sync duties from exchange %s', str(e))
 
 
 def ex_connect():
@@ -552,7 +559,9 @@ def sync_user_names_from_staff():
                             department = user_staff['departments'][1]['name']
                 if team_name == 'Отдел сопровождения внешних систем':
                     is_admin = 1
-                if department in ('Департамент эксплуатации', 'Департамент информационной безопасности и противодействия мошенничеству'):
+                if department in ('Департамент эксплуатации', 'Отдел ИТ- инфраструктуры и внутренних систем',
+                                  'Отдел ИТ- инфраструктуры и внутренних систем',
+                                  'Департамент информационной безопасности и противодействия мошенничеству'):
                     team_key = db().get_team_key(team_name)
                     is_ops = 1
                 db().set_users(account_name=user_staff['loginAD'], full_name=user_staff['firstName'] + ' ' + user_staff['lastName'], first_name=user_staff['firstName'], 
@@ -640,7 +649,6 @@ if __name__ == "__main__":
 
     # Сбор статистики
     scheduler.add_job(lambda: calculate_statistics(), 'cron', day_of_week='*', hour=19, minute=00)
-    sync_duties_from_exchange()
     # Напоминания о дежурствах
     scheduler.add_job(duty_reminder_daily_morning, 'cron', day_of_week='*', hour=9, minute=45)
     scheduler.add_job(duty_reminder_daily_evening, 'cron', day_of_week='mon,tue,wed,thu,sun', hour=18, minute=30)
