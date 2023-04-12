@@ -16,3 +16,9 @@ Ansible - забирает секреты из Vault
 Helm - шаблонизирует конфиги для K8s
 
 Выкатка контейнера происходит в кластер Intools, по мёржу
+
+### Author
+* **Dmitry Vorobiov** - *dvorob@gmail.com*
+
+### License
+GPLv2
